@@ -1,0 +1,2 @@
+# This folder holds settings.json and history.json at runtime.
+# The JSON files are gitignored because settings.json contains your API key.

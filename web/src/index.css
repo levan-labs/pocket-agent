@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mobile-first base: dark theme, no rubber-band overscroll, safe-area aware. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink text-slate-100;
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* Respect the phone's notch / gesture bar. */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Reusable little components. */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition active:scale-95 disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-white;
+  }
+  .btn-ghost {
+    @apply btn bg-panel border border-line text-slate-200;
+  }
+  .input {
+    @apply w-full rounded-lg bg-panel border border-line px-3 py-2 text-sm outline-none focus:border-accent;
+  }
+  .card {
+    @apply rounded-xl bg-panel border border-line;
+  }
+}
+
+/* Keep code blocks readable and scrollable on small screens. */
+pre {
+  @apply overflow-x-auto rounded-lg bg-black/40 p-3 text-xs leading-relaxed;
+}
+code {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
