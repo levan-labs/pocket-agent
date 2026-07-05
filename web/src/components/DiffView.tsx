@@ -34,14 +34,14 @@ export function DiffView({ filePath, original, proposed, onApplied }: Props) {
 
   return (
     <div className="card overflow-hidden">
-      <div className="flex items-center justify-between border-b border-line px-3 py-2 text-xs">
-        <span className="truncate font-mono text-slate-300">{filePath || '(no file selected)'}</span>
+      <div className="flex min-w-0 items-center justify-between gap-2 border-b border-line px-3 py-2 text-xs">
+        <span className="min-w-0 truncate font-mono text-slate-300">{filePath || '(no file selected)'}</span>
         <span className="shrink-0">
           <span className="text-green-400">+{added}</span> <span className="text-red-400">-{removed}</span>
         </span>
       </div>
 
-      <div className="max-h-72 overflow-auto font-mono text-xs">
+      <div className="max-h-[48dvh] overflow-auto font-mono text-xs sm:max-h-72">
         {rows.map((r, i) => (
           <div
             key={i}
@@ -63,7 +63,7 @@ export function DiffView({ filePath, original, proposed, onApplied }: Props) {
 
       <div className="space-y-2 border-t border-line p-3">
         {error && <ErrorBanner error={error} onClose={() => setError(null)} />}
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <button
             className="btn-primary flex-1"
             disabled={!filePath || status === 'saving' || status === 'done'}

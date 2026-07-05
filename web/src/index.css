@@ -7,6 +7,8 @@ html,
 body,
 #root {
   height: 100%;
+  min-height: 100%;
+  width: 100%;
 }
 
 body {
@@ -15,6 +17,13 @@ body {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+#root {
+  height: 100dvh;
+  overflow: hidden;
 }
 
 /* Respect the phone's notch / gesture bar. */
@@ -28,7 +37,7 @@ body {
 /* Reusable little components. */
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition active:scale-95 disabled:opacity-40;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition active:scale-95 disabled:opacity-40;
   }
   .btn-primary {
     @apply btn bg-accent text-white;
@@ -37,16 +46,16 @@ body {
     @apply btn bg-panel border border-line text-slate-200;
   }
   .input {
-    @apply w-full rounded-lg bg-panel border border-line px-3 py-2 text-sm outline-none focus:border-accent;
+    @apply w-full min-w-0 rounded-lg bg-panel border border-line px-3 py-2 text-base outline-none focus:border-accent sm:text-sm;
   }
   .card {
-    @apply rounded-xl bg-panel border border-line;
+    @apply min-w-0 rounded-lg bg-panel border border-line;
   }
 }
 
 /* Keep code blocks readable and scrollable on small screens. */
 pre {
-  @apply overflow-x-auto rounded-lg bg-black/40 p-3 text-xs leading-relaxed;
+  @apply max-w-full overflow-x-auto rounded-lg bg-black/40 p-3 text-xs leading-relaxed;
 }
 code {
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;

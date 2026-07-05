@@ -21,6 +21,10 @@ export const PROVIDERS = {
     label: 'OpenRouter',
     baseUrl: 'https://openrouter.ai/api/v1'
   },
+  nvidia: {
+    label: 'NVIDIA',
+    baseUrl: 'https://integrate.api.nvidia.com/v1'
+  },
   openai: {
     label: 'OpenAI',
     baseUrl: 'https://api.openai.com/v1'

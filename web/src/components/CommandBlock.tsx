@@ -23,11 +23,11 @@ export function CommandBlock({ commands }: { commands: string[] }) {
       </p>
       <div className="space-y-2">
         {commands.map((cmd, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <pre className="flex-1 !m-0 !py-2">
+          <div key={i} className="flex min-w-0 flex-col gap-2 min-[380px]:flex-row min-[380px]:items-center">
+            <pre className="min-w-0 flex-1 !m-0 !py-2">
               <code>{cmd}</code>
             </pre>
-            <button className="btn-ghost !py-1 !px-2 text-xs" onClick={() => copy(cmd, i)}>
+            <button className="btn-ghost !py-1 !px-2 text-xs min-[380px]:shrink-0" onClick={() => copy(cmd, i)}>
               {copied === i ? 'Copied' : 'Copy'}
             </button>
           </div>

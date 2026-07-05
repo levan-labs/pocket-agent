@@ -33,11 +33,11 @@ function Shell() {
   };
 
   return (
-    <div className="mx-auto flex h-full max-w-md flex-col">
+    <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden">
       <div className="safe-top" />
       <SetupNudge onGoSettings={() => setTab('settings')} />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {tab === 'chat' && <ChatPage />}
         {tab === 'ask' && <AskCodePage key={attach?.nonce} attachFile={attach?.path} />}
         {tab === 'files' && <FilesPage onOpenInAsk={openInAsk} />}

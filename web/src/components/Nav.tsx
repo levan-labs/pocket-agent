@@ -10,18 +10,20 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 
 export function Nav({ active, onChange }: { active: TabId; onChange: (t: TabId) => void }) {
   return (
-    <nav className="safe-bottom border-t border-line bg-panel">
+    <nav className="safe-bottom shrink-0 border-t border-line bg-panel">
       <div className="mx-auto flex max-w-md">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => onChange(t.id)}
-            className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] transition ${
+            className={`flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] leading-tight transition ${
               active === t.id ? 'text-accent' : 'text-slate-400'
             }`}
           >
-            <span className="text-lg leading-none">{t.icon}</span>
-            {t.label}
+            <span className="text-lg leading-none" aria-hidden="true">
+              {t.icon}
+            </span>
+            <span className="max-w-full truncate">{t.label}</span>
           </button>
         ))}
       </div>

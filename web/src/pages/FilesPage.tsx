@@ -47,7 +47,7 @@ export function FilesPage({ onOpenInAsk }: { onOpenInAsk: (path: string) => void
 
   if (!settings?.projectRoot) {
     return (
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         <h1 className="mb-3 text-lg font-semibold">Files</h1>
         <div className="card p-4 text-sm text-slate-400">
           No project folder set yet. Go to <span className="text-accent">Settings</span> and add an
@@ -58,10 +58,10 @@ export function FilesPage({ onOpenInAsk }: { onOpenInAsk: (path: string) => void
   }
 
   return (
-    <div className="space-y-3 p-4">
+    <div className="space-y-3 p-3 sm:p-4">
       <h1 className="text-lg font-semibold">Files</h1>
 
-      <div className="flex items-center gap-2 text-xs text-slate-400">
+      <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-slate-400">
         <button className="btn-ghost !py-1 !px-2" onClick={() => load('')}>
           root
         </button>
@@ -69,7 +69,7 @@ export function FilesPage({ onOpenInAsk }: { onOpenInAsk: (path: string) => void
           <>
             <span>/</span>
             <span className="truncate font-mono">{dir}</span>
-            <button className="btn-ghost !py-1 !px-2 ml-auto" onClick={parentDir}>
+            <button className="btn-ghost ml-auto !py-1 !px-2" onClick={parentDir}>
               ↑ up
             </button>
           </>
@@ -83,21 +83,21 @@ export function FilesPage({ onOpenInAsk }: { onOpenInAsk: (path: string) => void
         {items.map((it) => (
           <button
             key={it.path}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-white/5"
+            className="flex min-h-11 w-full min-w-0 items-center gap-2 px-3 py-2 text-left text-sm hover:bg-white/5"
             onClick={() => (it.type === 'dir' ? load(it.path) : openFile(it.path))}
           >
             <span>{it.type === 'dir' ? '📁' : '📄'}</span>
-            <span className="truncate">{it.name}</span>
+            <span className="min-w-0 truncate">{it.name}</span>
           </button>
         ))}
       </div>
 
       {preview && (
         <div className="card overflow-hidden">
-          <div className="flex items-center justify-between border-b border-line px-3 py-2">
-            <span className="truncate font-mono text-xs text-slate-300">{preview.path}</span>
+          <div className="flex min-w-0 flex-col gap-2 border-b border-line px-3 py-2 min-[380px]:flex-row min-[380px]:items-center min-[380px]:justify-between">
+            <span className="min-w-0 truncate font-mono text-xs text-slate-300">{preview.path}</span>
             <button
-              className="btn-primary !py-1 !px-2 text-xs"
+              className="btn-primary !py-1 !px-2 text-xs min-[380px]:shrink-0"
               onClick={() => onOpenInAsk(preview.path)}
             >
               Open in Ask Code

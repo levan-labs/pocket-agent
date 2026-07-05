@@ -16,6 +16,8 @@ export function SettingsPage() {
 
   const [models, setModels] = useState<ModelOption[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testMessage, setTestMessage] = useState('');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
 
@@ -37,6 +39,7 @@ export function SettingsPage() {
 
   const onSave = async () => {
     setError(null);
+    setTestMessage('');
     setSaved(false);
     try {
       await save({ provider, baseUrl, apiKey, model, projectRoot });
@@ -62,8 +65,22 @@ export function SettingsPage() {
     }
   };
 
+  const testConnection = async () => {
+    setError(null);
+    setTestMessage('');
+    setTesting(true);
+    try {
+      await api.testSettings();
+      setTestMessage('Connection OK.');
+    } catch (e: any) {
+      setError({ message: e.message, kind: e.kind || 'unknown' });
+    } finally {
+      setTesting(false);
+    }
+  };
+
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 p-3 sm:p-4">
       <h1 className="text-lg font-semibold">Settings</h1>
 
       {error && <ErrorBanner error={error} onClose={() => setError(null)} />}
@@ -96,7 +113,10 @@ export function SettingsPage() {
 
         <label className="block text-sm">
           <span className="mb-1 block text-slate-400">
-            API key {settings?.hasApiKey && <span className="text-green-400">• saved</span>}
+            API key{' '}
+            {settings?.hasApiKey && (
+              <span className="font-mono text-green-400">saved {settings.maskedApiKey}</span>
+            )}
           </span>
           <input
             className="input font-mono text-xs"
@@ -105,11 +125,14 @@ export function SettingsPage() {
             onChange={(e) => setApiKey(e.target.value)}
             placeholder={settings?.hasApiKey ? '•••••••• (leave blank to keep)' : 'Paste your key'}
           />
+          <span className="mt-1 block text-[11px] text-slate-500">
+            The full key is stored only on this device and is never shown again.
+          </span>
         </label>
       </div>
 
       <div className="card space-y-3 p-4">
-        <div className="flex items-end gap-2">
+        <div className="flex min-w-0 flex-col gap-2 min-[380px]:flex-row min-[380px]:items-end">
           <label className="block flex-1 text-sm">
             <span className="mb-1 block text-slate-400">Model</span>
             <input
@@ -125,7 +148,7 @@ export function SettingsPage() {
               ))}
             </datalist>
           </label>
-          <button className="btn-ghost" onClick={loadModels} disabled={loadingModels}>
+          <button className="btn-ghost min-[380px]:shrink-0" onClick={loadModels} disabled={loadingModels}>
             {loadingModels ? '…' : 'Load'}
           </button>
         </div>
@@ -151,14 +174,22 @@ export function SettingsPage() {
         </label>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 flex-col gap-2 min-[380px]:flex-row min-[380px]:items-center">
         <button className="btn-primary flex-1" onClick={onSave}>
           {saved ? '✓ Saved' : 'Save settings'}
         </button>
-        <button className="btn-ghost" onClick={() => refresh()}>
+        <button
+          className="btn-ghost min-[380px]:shrink-0"
+          onClick={testConnection}
+          disabled={testing || !settings?.hasApiKey}
+        >
+          {testing ? 'Testing…' : 'Test connection'}
+        </button>
+        <button className="btn-ghost min-[380px]:shrink-0" onClick={() => refresh()}>
           Reload
         </button>
       </div>
+      {testMessage && <p className="text-sm text-green-400">{testMessage}</p>}
     </div>
   );
 }

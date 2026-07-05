@@ -66,13 +66,15 @@ export function ChatPage() {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b border-line px-4 py-3">
-        <h1 className="text-base font-semibold">Chat</h1>
-        <div className="flex items-center gap-2">
-          <span className="max-w-[45vw] truncate rounded bg-panel px-2 py-1 font-mono text-[11px] text-slate-400">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <header className="shrink-0 border-b border-line px-3 py-3 sm:px-4">
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <h1 className="shrink-0 text-base font-semibold">Chat</h1>
+          <span className="min-w-0 max-w-[52vw] truncate rounded bg-panel px-2 py-1 font-mono text-[11px] text-slate-400">
             {settings?.model || 'no model'}
           </span>
+        </div>
+        <div className="mt-2 flex justify-end">
           {messages.length > 0 && (
             <button className="btn-ghost !py-1 !px-2 text-xs" onClick={() => setMessages([])}>
               Clear
@@ -81,7 +83,7 @@ export function ChatPage() {
         </div>
       </header>
 
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3 sm:p-4">
         {messages.length === 0 && (
           <div className="mt-10 text-center text-sm text-slate-500">
             <p className="text-3xl">💬</p>
@@ -95,7 +97,7 @@ export function ChatPage() {
             className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}
           >
             <div
-              className={`max-w-[85%] rounded-2xl px-3 py-2 ${
+              className={`min-w-0 max-w-[88%] rounded-2xl px-3 py-2 ${
                 m.role === 'user' ? 'bg-accent text-white' : 'card'
               }`}
             >
@@ -114,11 +116,11 @@ export function ChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="space-y-2 border-t border-line p-3">
+      <div className="shrink-0 space-y-2 border-t border-line p-3">
         {error && <ErrorBanner error={error} onClose={() => setError(null)} />}
-        <div className="flex items-end gap-2">
+        <div className="flex min-w-0 items-end gap-2">
           <textarea
-            className="input max-h-40 min-h-[44px] flex-1 resize-none"
+            className="input max-h-40 min-h-11 flex-1 resize-none"
             rows={1}
             value={input}
             placeholder="Type a message…"

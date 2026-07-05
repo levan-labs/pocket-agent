@@ -78,18 +78,18 @@ export function AskCodePage({ attachFile }: { attachFile?: string | null }) {
   const commands = answer ? shellCommands(answer) : [];
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 p-3 sm:p-4">
       <h1 className="text-lg font-semibold">Ask Code</h1>
 
       {/* Mode picker */}
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2 min-[380px]:flex min-[380px]:flex-wrap">
         {modes.map((m) => (
           <button
             key={m.id}
             onClick={() => setMode(m.id)}
-            className={`btn ${mode === m.id ? 'bg-accent text-white' : 'bg-panel border border-line text-slate-300'}`}
+            className={`btn min-w-0 ${mode === m.id ? 'bg-accent text-white' : 'bg-panel border border-line text-slate-300'}`}
           >
-            {m.label}
+            <span className="truncate">{m.label}</span>
           </button>
         ))}
       </div>
@@ -97,14 +97,18 @@ export function AskCodePage({ attachFile }: { attachFile?: string | null }) {
       {/* Attach from project (optional) */}
       <div className="card p-3">
         <span className="mb-1 block text-xs text-slate-400">Attach file from project (optional)</span>
-        <div className="flex gap-2">
+        <div className="flex min-w-0 flex-col gap-2 min-[380px]:flex-row">
           <input
             className="input font-mono text-xs"
             value={filePath}
             onChange={(e) => setFilePath(e.target.value)}
             placeholder="src/index.js"
           />
-          <button className="btn-ghost" onClick={() => loadFile(filePath)} disabled={!filePath.trim()}>
+          <button
+            className="btn-ghost min-[380px]:shrink-0"
+            onClick={() => loadFile(filePath)}
+            disabled={!filePath.trim()}
+          >
             Load
           </button>
         </div>
@@ -117,7 +121,7 @@ export function AskCodePage({ attachFile }: { attachFile?: string | null }) {
 
       {/* Code + options */}
       <div className="card space-y-2 p-3">
-        <div className="flex gap-2">
+        <div className="flex min-w-0 gap-2">
           <input
             className="input flex-1 text-xs"
             value={language}
@@ -126,7 +130,7 @@ export function AskCodePage({ attachFile }: { attachFile?: string | null }) {
           />
         </div>
         <textarea
-          className="input min-h-[160px] resize-y font-mono text-xs"
+          className="input min-h-[42dvh] resize-y font-mono text-xs sm:min-h-[220px]"
           value={code}
           onChange={(e) => setCode(e.target.value)}
           placeholder="Paste or type your code here…"
@@ -140,7 +144,7 @@ export function AskCodePage({ attachFile }: { attachFile?: string | null }) {
         <button className="btn-primary w-full" onClick={run} disabled={!code.trim() || streaming}>
           {streaming ? 'Thinking…' : `Run: ${modes.find((m) => m.id === mode)?.label}`}
         </button>
-        <p className="text-[11px] text-slate-500">Model: {settings?.model || 'not set'}</p>
+        <p className="break-words text-[11px] text-slate-500">Model: {settings?.model || 'not set'}</p>
       </div>
 
       {error && <ErrorBanner error={error} onClose={() => setError(null)} />}

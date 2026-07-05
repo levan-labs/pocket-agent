@@ -10,8 +10,9 @@ const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
   }
+  fs.chmodSync(DATA_DIR, 0o700);
 }
 
 function readJson(file, fallback) {
@@ -28,6 +29,13 @@ function writeJson(file, data) {
   ensureDataDir();
   // Restrict file permissions where supported (0600) since it holds the API key.
   fs.writeFileSync(file, JSON.stringify(data, null, 2), { mode: 0o600 });
+  fs.chmodSync(file, 0o600);
+}
+
+function maskApiKey(key = '') {
+  if (!key) return '';
+  const tail = key.slice(-4);
+  return `****${tail}`;
 }
 
 // Raw settings from disk merged with defaults. Does NOT apply the env fallback,
@@ -62,7 +70,7 @@ export function saveSettings(patch) {
 // The frontend only needs to know whether a key exists.
 export function getPublicSettings() {
   const s = getSettings();
-  return { ...s, apiKey: '', hasApiKey: Boolean(s.apiKey) };
+  return { ...s, apiKey: '', maskedApiKey: maskApiKey(s.apiKey), hasApiKey: Boolean(s.apiKey) };
 }
 
 export function getHistory() {

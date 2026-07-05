@@ -33,7 +33,7 @@ function describeStatus(status, bodyText) {
     return { kind: 'server', message: `Provider server error (${status}). Try again shortly.` };
   }
   if (status >= 400) {
-    return { kind: 'bad_request', message: `Request rejected (${status}). ${shorten(bodyText)}` };
+    return { kind: 'bad_request', message: `Request rejected (${status}). Check provider, base URL, and model settings.` };
   }
   return { kind: 'unknown', message: `Unexpected response (${status}).` };
 }
@@ -45,7 +45,7 @@ function shorten(text = '') {
 
 function requireConfig(settings) {
   if (!settings.baseUrl) throw new ApiError('No API base URL configured.', { kind: 'config' });
-  if (!settings.apiKey) throw new ApiError('No API key configured. Open Settings.', { kind: 'config' });
+  if (!settings.apiKey) throw new ApiError('API key is not configured.', { kind: 'config' });
 }
 
 // GET /models — returns the raw list from the provider (array of {id,...}).
@@ -68,14 +68,16 @@ export async function listModels(settings) {
 }
 
 // Non-streaming completion. Returns the assistant message string.
-export async function chatOnce(settings, messages, { temperature = 0.3 } = {}) {
+export async function chatOnce(settings, messages, { temperature = 0.3, maxTokens } = {}) {
   requireConfig(settings);
+  const body = { model: settings.model, messages, temperature, stream: false };
+  if (Number.isFinite(maxTokens)) body.max_tokens = maxTokens;
   let res;
   try {
     res = await fetch(`${settings.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: buildHeaders(settings),
-      body: JSON.stringify({ model: settings.model, messages, temperature, stream: false })
+      body: JSON.stringify(body)
     });
   } catch (e) {
     throw new ApiError('Network error reaching provider. Check connection.', { kind: 'network' });

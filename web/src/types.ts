@@ -1,6 +1,6 @@
 // Shared types for the frontend.
 
-export type Provider = 'openrouter' | 'openai' | 'custom';
+export type Provider = 'openrouter' | 'nvidia' | 'openai' | 'custom';
 
 export interface Settings {
   provider: Provider;
@@ -9,6 +9,7 @@ export interface Settings {
   model: string;
   projectRoot: string;
   hasApiKey?: boolean;
+  maskedApiKey?: string;
 }
 
 export interface ProviderPreset {

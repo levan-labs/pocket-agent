@@ -5,7 +5,8 @@ node_modules/
 web/dist/
 
 # Local data: contains API keys and chat history. NEVER commit this.
-server/data/*.json
+server/data/
+*.local
 
 # Logs
 *.log

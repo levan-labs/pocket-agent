@@ -52,6 +52,7 @@ export const api = {
     getJson<{ settings: Settings; providers: Record<string, ProviderPreset> }>('/api/settings'),
   saveSettings: (patch: Partial<Settings>) =>
     postJson<{ settings: Settings }>('/api/settings', patch),
+  testSettings: () => postJson<{ ok: true; message: string }>('/api/settings/test', {}),
   getModels: () => getJson<{ models: ModelOption[] }>('/api/models'),
   getModes: () => getJson<{ modes: AskMode[] }>('/api/modes'),
   listFiles: (dir = '') =>

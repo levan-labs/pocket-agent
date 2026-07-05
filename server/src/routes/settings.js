@@ -1,7 +1,8 @@
 // Settings endpoints: read (key hidden) and update.
 import { Router } from 'express';
-import { getPublicSettings, saveSettings } from '../storage.js';
+import { getPublicSettings, getSettings, saveSettings } from '../storage.js';
 import { PROVIDERS } from '../config.js';
+import { chatOnce, ApiError } from '../aiClient.js';
 
 const router = Router();
 
@@ -23,6 +24,24 @@ router.post('/', (req, res) => {
 
   saveSettings(patch);
   res.json({ settings: getPublicSettings() });
+});
+
+// POST /api/settings/test -> make a tiny provider request using the server-side key.
+router.post('/test', async (req, res) => {
+  try {
+    const text = await chatOnce(
+      getSettings(),
+      [
+        { role: 'system', content: 'Reply with exactly: ok' },
+        { role: 'user', content: 'Connection test' }
+      ],
+      { temperature: 0, maxTokens: 8 }
+    );
+    res.json({ ok: true, message: text || 'ok' });
+  } catch (err) {
+    const status = err instanceof ApiError ? err.status || 400 : 500;
+    res.status(status).json({ error: err.message, kind: err.kind || 'unknown' });
+  }
 });
 
 export default router;
