@@ -1,0 +1,23 @@
+{
+  "name": "pocket-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mobile-first AI coding workspace for Android developers using Termux and Acode.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @pocket-agent/web",
+    "build": "npm run build --workspace @pocket-agent/web",
+    "preview": "npm run preview --workspace @pocket-agent/web",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}
