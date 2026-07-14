@@ -1,5 +1,6 @@
-/**
- * UI primitives (Button, Sheet, Icon) are added in Milestone 1 Step 2
- * together with the design tokens they depend on.
- */
-export {}
+export { Button } from './Button'
+export type { ButtonProps, ButtonVariant } from './Button'
+export { Icon } from './Icon'
+export type { IconName, IconProps } from './Icon'
+export { Sheet } from './Sheet'
+export type { SheetProps } from './Sheet'

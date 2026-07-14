@@ -1,0 +1,171 @@
+/* App shell layout. Mobile-first, single column, no horizontal overflow. */
+
+html,
+body {
+  height: 100%;
+  overflow: hidden; /* the shell manages its own scroll areas */
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+#root {
+  height: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* --- Shell ------------------------------------------------------------- */
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: var(--viewport-height);
+  max-width: 800px; /* keeps single-column comfortable on tablets/landscape */
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: none;
+  min-height: var(--header-height);
+  padding: var(--safe-top) var(--space-4) 0;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.app-header h1 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.app-main {
+  flex: 1;
+  min-height: 0; /* allows children to shrink and scroll */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Pages that scroll as a whole (Files, Terminal, Settings) */
+.page-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-4);
+}
+
+/* --- Bottom navigation -------------------------------------------------- */
+
+.bottom-nav {
+  flex: none;
+  display: flex;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding-bottom: var(--safe-bottom);
+}
+
+.bottom-nav button {
+  flex: 1;
+  min-height: var(--nav-height);
+  min-width: var(--touch-target);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav button[aria-current='page'] {
+  color: var(--color-accent);
+}
+
+/* --- Empty / placeholder states ----------------------------------------- */
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  text-align: center;
+}
+
+.empty-state h2 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.empty-state p {
+  color: var(--color-text-muted);
+  max-width: 32ch;
+}
+
+.badge-soon {
+  display: inline-block;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* --- Settings ------------------------------------------------------------ */
+
+.settings-section {
+  margin-bottom: var(--space-5);
+}
+
+.settings-section h2 {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.settings-list {
+  list-style: none;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.settings-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-4);
+}
+
+.settings-list li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.settings-list .muted {
+  color: var(--color-text-muted);
+}

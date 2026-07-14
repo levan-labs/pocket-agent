@@ -1,23 +1,32 @@
-/**
- * Milestone 1 Step 1 placeholder shell.
- * The real mobile app shell, design tokens, and bottom navigation are
- * built in Step 2.
- */
+import { useState } from 'react'
+import { BottomNav, type Tab } from './features/nav/BottomNav'
+import { ChatPage } from './pages/ChatPage'
+import { FilesPage } from './pages/FilesPage'
+import { SettingsPage } from './pages/SettingsPage'
+import { TerminalPage } from './pages/TerminalPage'
+
+const TITLES: Record<Tab, string> = {
+  chat: 'Pocket Agent',
+  files: 'Files',
+  terminal: 'Terminal',
+  settings: 'Settings',
+}
+
 export function App() {
+  const [tab, setTab] = useState<Tab>('chat')
+
   return (
-    <main
-      style={{
-        minHeight: '100dvh',
-        display: 'grid',
-        placeItems: 'center',
-        textAlign: 'center',
-        padding: '1rem',
-      }}
-    >
-      <div>
-        <h1>Pocket Agent</h1>
-        <p>Your code stays on your phone. You choose the AI model.</p>
-      </div>
-    </main>
+    <div className="app-shell">
+      <header className="app-header">
+        <h1>{TITLES[tab]}</h1>
+      </header>
+      <main className="app-main">
+        {tab === 'chat' && <ChatPage />}
+        {tab === 'files' && <FilesPage />}
+        {tab === 'terminal' && <TerminalPage />}
+        {tab === 'settings' && <SettingsPage />}
+      </main>
+      <BottomNav active={tab} onSelect={setTab} />
+    </div>
   )
 }
