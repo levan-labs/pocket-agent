@@ -25,8 +25,14 @@ body {
 /* --- Shell ------------------------------------------------------------- */
 
 .app-shell {
+  /* Fixed to the visual viewport so keyboard/chrome offset is respected. */
+  position: fixed;
+  top: var(--viewport-offset-top);
+  left: 0;
+  right: 0;
   display: flex;
   flex-direction: column;
+  width: 100%;
   height: var(--viewport-height);
   max-width: 800px; /* keeps single-column comfortable on tablets/landscape */
   margin: 0 auto;
@@ -95,6 +101,118 @@ body {
 
 .bottom-nav button[aria-current='page'] {
   color: var(--color-accent);
+}
+
+/* --- Chat ---------------------------------------------------------------- */
+
+.chat-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.message-list--empty {
+  justify-content: center;
+}
+
+.message-bubble {
+  max-width: min(85%, 36rem);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-md);
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.message-bubble--user {
+  align-self: flex-end;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.message-bubble--assistant {
+  align-self: flex-start;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.message-bubble--pending {
+  opacity: 0.85;
+}
+
+.message-bubble__text {
+  margin: 0;
+}
+
+.composer {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.composer__input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-target);
+  max-height: 8rem;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--text-md); /* 16px — prevents Android zoom-on-focus */
+  line-height: 1.4;
+  resize: none;
+  field-sizing: content;
+}
+
+.composer__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.composer__input:disabled {
+  opacity: 0.6;
+}
+
+.composer__send {
+  flex: none;
+  width: var(--touch-target);
+  padding-inline: 0;
+}
+
+.composer__send:disabled {
+  opacity: 0.45;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* --- Empty / placeholder states ----------------------------------------- */
