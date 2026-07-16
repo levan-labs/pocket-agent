@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BottomNav, type Tab } from './features/nav/BottomNav'
+import { useVisualViewport } from './hooks/useVisualViewport'
 import { ChatPage } from './pages/ChatPage'
 import { FilesPage } from './pages/FilesPage'
 import { SettingsPage } from './pages/SettingsPage'
@@ -14,6 +15,7 @@ const TITLES: Record<Tab, string> = {
 
 export function App() {
   const [tab, setTab] = useState<Tab>('chat')
+  useVisualViewport()
 
   return (
     <div className="app-shell">
