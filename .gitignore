@@ -2,14 +2,30 @@
 node_modules/
 
 # Build output
+<<<<<<< HEAD
 web/dist/
 
 # Local data: contains API keys and chat history. NEVER commit this.
 server/data/*.json
+=======
+dist/
+*.tsbuildinfo
+
+# Environment / secrets — never commit provider keys
+.env
+.env.*
+!.env.example
+
+# Editor and OS noise
+.vscode/
+.idea/
+.DS_Store
+>>>>>>> main
 
 # Logs
 *.log
 npm-debug.log*
+<<<<<<< HEAD
 
 # Editor / OS
 .DS_Store
@@ -19,3 +35,5 @@ npm-debug.log*
 # Env
 .env
 .env.*
+=======
+>>>>>>> main
