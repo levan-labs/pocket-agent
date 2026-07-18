@@ -1,0 +1,79 @@
+/* Styles for @pocket-agent/ui primitives. Uses only design-token variables
+   defined by the app (tokens.css). */
+
+/* --- Button -------------------------------------------------------------- */
+
+.pa-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--text-md);
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pa-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pa-button--primary {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.pa-button--secondary {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.pa-button--danger {
+  background: none;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.pa-button--ghost {
+  background: none;
+  color: var(--color-text-muted);
+}
+
+/* --- Sheet ---------------------------------------------------------------- */
+
+.pa-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 50%);
+  z-index: 10;
+}
+
+.pa-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 11;
+  max-width: 800px;
+  margin: 0 auto;
+  max-height: 80dvh;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--space-4);
+  padding-bottom: calc(var(--space-4) + var(--safe-bottom));
+}
+
+.pa-sheet-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+}

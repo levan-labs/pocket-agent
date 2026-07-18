@@ -1,0 +1,20 @@
+{
+  "name": "@pocket-agent/opencode-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Adapter that exposes a local OpenCode server through the AgentProvider interface. All OpenCode-specific details stay inside this package.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pocket-agent/agent-core": "*",
+    "@pocket-agent/shared-types": "*"
+  }
+}
