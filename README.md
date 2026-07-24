@@ -34,12 +34,12 @@ agent.**
 Pocket Agent Mobile UI
         ↓
 AgentProvider interface        (packages/agent-core)
-        ↓
-OpenCode adapter               (packages/opencode-adapter)
-        ↓
-OpenCode local server          (runs in Termux)
-        ↓
-Zen / OpenRouter / other model providers
+        ├── MockProvider       (offline demo — working today)
+        └── OpenCode adapter   (health check ready; chat = Milestone 2)
+                ↓
+        OpenCode local server  (Termux)
+                ↓
+        Zen / OpenRouter / other model providers
 ```
 
 The UI only ever talks to the provider-neutral `AgentProvider` interface.
@@ -74,8 +74,15 @@ to your LAN by default.
 
 ## Status
 
-Early development — Milestone 1 (mobile MVP foundation) is in progress.
-See [ideas.md](ideas.md) for future directions.
+Milestone 1 foundation is complete:
+
+- keyboard-safe chat UI with streaming mock replies and permission cards
+- provider connection screen (Mock works; OpenCode listed but chat-disabled)
+- OpenCode adapter skeleton (loopback health check only)
+- Files and Terminal tabs visibly disabled until a provider supports them
+
+OpenCode session sync and real SSE chat mapping are **Milestone 2**.
+See [ideas.md](ideas.md) for longer-term directions.
 
 ## Security defaults
 

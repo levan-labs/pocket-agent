@@ -1,7 +1,7 @@
 # Running Pocket Agent in Termux
 
-Status: Milestone 1 skeleton. This guide covers the development setup; it
-will grow as the app becomes usable.
+Status: Milestone 1 foundation complete. Use the Mock provider for chat demos
+today. Connecting a real OpenCode server for chat is Milestone 2.
 
 ## Prerequisites
 

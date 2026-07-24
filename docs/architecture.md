@@ -1,7 +1,8 @@
 # Pocket Agent Architecture
 
-Status: Milestone 1 skeleton. Sections marked *(planned)* describe design
-intent that is not implemented yet.
+Status: Milestone 1 foundation complete. OpenCode chat/session mapping and
+interactive Files/Terminal remain *Milestone 2*. Sections marked *(planned)*
+describe design intent that is not implemented yet.
 
 ## Layers
 
@@ -17,13 +18,14 @@ OpenCode local server           external process (Termux)
 Zen / OpenRouter / other model providers
 ```
 
-Future shape:
+Future shape (Milestone 2+):
 
 ```
 Pocket Agent UI
         ↓
 AgentProvider interface
-        ├── OpenCodeProvider
+        ├── MockProvider                 (offline demo — working)
+        ├── OpenCodeProvider             (health check — working; chat planned)
         ├── custom Pocket Agent engine   (planned)
         ├── remote provider              (planned)
         └── optional local/offline model (planned)
@@ -57,16 +59,16 @@ surface the UI is allowed to use. Rules:
 - **`@pocket-agent/agent-core`** — the `AgentProvider` interface and
   `ProviderRegistry`. Depends only on shared-types.
 - **`@pocket-agent/mock-provider`** — in-memory provider used to build and
-  demo the UI without any backend. Will simulate streaming and permission
-  flows *(Milestone 1 Step 4)*.
+  demo the UI without any backend. Simulates streaming replies and an
+  approval-based permission flow *(Milestone 1 Step 4)*.
 - **`@pocket-agent/opencode-adapter`** — translates between `AgentProvider`
-  and a local OpenCode server. Skeleton with typed client boundaries arrives
-  in *Milestone 1 Step 6*; real SSE mapping and session sync are
+  and a local OpenCode server. Typed HTTP client + connect/health skeleton
+  *(Milestone 1 Step 6)*. Real SSE mapping and session sync are
   *Milestone 2*.
 - **`@pocket-agent/ui`** — small mobile-first primitives (Button, Sheet,
   Icon) *(Milestone 1 Step 2)*.
-- **`@pocket-agent/web`** — the app. State management is React Context +
-  hooks; navigation is simple tab switching (no router) for Milestone 1.
+- **`@pocket-agent/web`** — the app. React Context + hooks; tab navigation
+  (no router); connection sheet; keyboard-safe chat *(Milestone 1)*.
 
 ## Mobile-first UX decisions
 
