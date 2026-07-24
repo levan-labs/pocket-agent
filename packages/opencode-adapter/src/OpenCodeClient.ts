@@ -4,9 +4,21 @@ export interface OpenCodeHealth {
   version: string
 }
 
+/** Subset of OpenCode's Session type that we need for Milestone 2 Step 1. */
+export interface OpenCodeSession {
+  id: string
+  title: string
+  time: {
+    created: number
+    updated: number
+  }
+}
+
 /** Typed HTTP boundary used by OpenCodeProvider. */
 export interface OpenCodeClient {
   health(): Promise<OpenCodeHealth>
+  listSessions(): Promise<OpenCodeSession[]>
+  createSession(input?: { title?: string }): Promise<OpenCodeSession>
 }
 
 export interface OpenCodeHttpClientOptions {
@@ -32,10 +44,19 @@ function isHealthResponse(value: unknown): value is OpenCodeHealth {
   return typeof candidate.healthy === 'boolean' && typeof candidate.version === 'string'
 }
 
+function isSession(value: unknown): value is OpenCodeSession {
+  if (!value || typeof value !== 'object') return false
+  const candidate = value as Record<string, unknown>
+  if (typeof candidate.id !== 'string' || typeof candidate.title !== 'string') return false
+  if (!candidate.time || typeof candidate.time !== 'object') return false
+  const time = candidate.time as Record<string, unknown>
+  return typeof time.created === 'number' && typeof time.updated === 'number'
+}
+
 /**
- * Minimal fetch-based OpenCode client.
+ * Fetch-based OpenCode client.
  *
- * Session, event-stream, and permission endpoints are added in Milestone 2.
+ * Event-stream and permission endpoints are added in later Milestone 2 steps.
  */
 export class OpenCodeHttpClient implements OpenCodeClient {
   private readonly baseUrl: string
@@ -49,20 +70,54 @@ export class OpenCodeHttpClient implements OpenCodeClient {
   }
 
   async health(): Promise<OpenCodeHealth> {
-    const headers = new Headers()
-    if (this.password) {
-      headers.set('Authorization', basicAuthorization(this.password))
-    }
-
-    const response = await this.fetch(`${this.baseUrl}/global/health`, { headers })
-    if (!response.ok) {
-      throw new Error(`OpenCode health check failed (HTTP ${response.status}).`)
-    }
-
-    const body: unknown = await response.json()
+    const body = await this.requestJson('GET', '/global/health')
     if (!isHealthResponse(body)) {
       throw new Error('OpenCode health check returned an invalid response.')
     }
     return body
+  }
+
+  async listSessions(): Promise<OpenCodeSession[]> {
+    const body = await this.requestJson('GET', '/session')
+    if (!Array.isArray(body) || !body.every(isSession)) {
+      throw new Error('OpenCode session list returned an invalid response.')
+    }
+    return body
+  }
+
+  async createSession(input?: { title?: string }): Promise<OpenCodeSession> {
+    const body = await this.requestJson('POST', '/session', {
+      title: input?.title,
+    })
+    if (!isSession(body)) {
+      throw new Error('OpenCode create session returned an invalid response.')
+    }
+    return body
+  }
+
+  private async requestJson(
+    method: string,
+    path: string,
+    body?: unknown,
+  ): Promise<unknown> {
+    const headers = new Headers()
+    if (this.password) {
+      headers.set('Authorization', basicAuthorization(this.password))
+    }
+    if (body !== undefined) {
+      headers.set('Content-Type', 'application/json')
+    }
+
+    const response = await this.fetch(`${this.baseUrl}${path}`, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+
+    if (!response.ok) {
+      throw new Error(`OpenCode ${method} ${path} failed (HTTP ${response.status}).`)
+    }
+
+    return response.json()
   }
 }

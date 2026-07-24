@@ -11,6 +11,7 @@ import {
   OpenCodeHttpClient,
   type OpenCodeClient,
   type OpenCodeHttpClientOptions,
+  type OpenCodeSession,
 } from './OpenCodeClient'
 
 export type OpenCodeClientFactory = (options: OpenCodeHttpClientOptions) => OpenCodeClient
@@ -41,8 +42,8 @@ function assertLoopbackBaseUrl(baseUrl: string): URL {
 /**
  * Adapter that exposes a local OpenCode server through AgentProvider.
  *
- * Milestone 1 Step 6: connect/disconnect + typed HTTP client boundary.
- * Session sync, streaming, and permission mapping arrive in Milestone 2.
+ * Milestone 2 Step 1: connect + real session list/create.
+ * Streaming and permission mapping arrive in later Milestone 2 steps.
  */
 export class OpenCodeProvider implements AgentProvider {
   readonly id = 'opencode'
@@ -89,10 +90,10 @@ export class OpenCodeProvider implements AgentProvider {
   }
 
   getCapabilities(): ProviderCapabilities {
-    // Honest: connection works, but chat/session/permission mapping is Milestone 2.
+    // Sessions work. Chat streaming / permissions still Milestone 2.
     return {
       streaming: false,
-      sessions: false,
+      sessions: true,
       permissions: false,
       files: false,
       terminal: false,
@@ -100,28 +101,30 @@ export class OpenCodeProvider implements AgentProvider {
   }
 
   async listSessions(): Promise<AgentSession[]> {
-    this.requireClient()
-    throw new Error('OpenCode sessions are implemented in Milestone 2.')
+    const client = this.requireClient()
+    const sessions = await client.listSessions()
+    return sessions.map(toAgentSession)
   }
 
-  async createSession(_input?: CreateSessionInput): Promise<AgentSession> {
-    this.requireClient()
-    throw new Error('OpenCode sessions are implemented in Milestone 2.')
+  async createSession(input?: CreateSessionInput): Promise<AgentSession> {
+    const client = this.requireClient()
+    const session = await client.createSession({ title: input?.title })
+    return toAgentSession(session)
   }
 
   async *sendMessage(_sessionId: string, _message: string): AsyncIterable<AgentEvent> {
     this.requireClient()
-    throw new Error('OpenCode streaming is implemented in Milestone 2.')
+    throw new Error('OpenCode streaming is implemented in a later Milestone 2 step.')
   }
 
   async approvePermission(_requestId: string): Promise<void> {
     this.requireClient()
-    throw new Error('OpenCode permissions are implemented in Milestone 2.')
+    throw new Error('OpenCode permissions are implemented in a later Milestone 2 step.')
   }
 
   async denyPermission(_requestId: string): Promise<void> {
     this.requireClient()
-    throw new Error('OpenCode permissions are implemented in Milestone 2.')
+    throw new Error('OpenCode permissions are implemented in a later Milestone 2 step.')
   }
 
   private requireClient(): OpenCodeClient {
@@ -129,5 +132,14 @@ export class OpenCodeProvider implements AgentProvider {
       throw new Error('OpenCode provider is not connected.')
     }
     return this.client
+  }
+}
+
+function toAgentSession(session: OpenCodeSession): AgentSession {
+  return {
+    id: session.id,
+    title: session.title,
+    createdAt: new Date(session.time.created).toISOString(),
+    updatedAt: new Date(session.time.updated).toISOString(),
   }
 }

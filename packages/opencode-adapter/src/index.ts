@@ -14,6 +14,7 @@ export type {
   OpenCodeClient,
   OpenCodeHealth,
   OpenCodeHttpClientOptions,
+  OpenCodeSession,
 } from './OpenCodeClient'
 
 export { OpenCodeProvider } from './OpenCodeProvider'
