@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import type { ChatMessage, PermissionRequest } from '@pocket-agent/shared-types'
-import { useAgentProvider } from '../features/agent/AgentContext'
+import { useAgentConnection } from '../features/agent/AgentContext'
 import { Composer } from '../features/chat/Composer'
 import { MessageList } from '../features/chat/MessageList'
 import { PermissionCard } from '../features/chat/PermissionCard'
@@ -11,14 +11,25 @@ import { PermissionCard } from '../features/chat/PermissionCard'
  * provider's AgentEvent stream.
  */
 export function ChatPage() {
-  const provider = useAgentProvider()
+  const { provider } = useAgentConnection()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [permission, setPermission] = useState<PermissionRequest | null>(null)
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const sessionIdRef = useRef<string | null>(null)
 
+  // Conversation state belongs to one connection; reset when it changes.
+  const lastProviderRef = useRef(provider)
+  if (lastProviderRef.current !== provider) {
+    lastProviderRef.current = provider
+    sessionIdRef.current = null
+    if (messages.length > 0) setMessages([])
+    if (permission) setPermission(null)
+    if (error) setError(null)
+  }
+
   async function ensureSession(): Promise<string> {
+    if (!provider) throw new Error('No provider connected.')
     if (sessionIdRef.current) return sessionIdRef.current
     const session = await provider.createSession()
     sessionIdRef.current = session.id
@@ -46,6 +57,7 @@ export function ChatPage() {
   }
 
   async function handleSend(text: string) {
+    if (!provider) return
     setError(null)
     setStreaming(true)
     try {
@@ -95,6 +107,19 @@ export function ChatPage() {
       setStreaming(false)
       setPermission(null)
     }
+  }
+
+  if (!provider) {
+    return (
+      <div className="chat-page">
+        <div className="empty-state">
+          <h2>Not connected</h2>
+          <p>Connect a provider in Settings to start chatting.</p>
+          <span className="badge-soon">Settings → Provider → Connect</span>
+        </div>
+        <Composer onSend={handleSend} disabled />
+      </div>
+    )
   }
 
   return (

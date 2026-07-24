@@ -349,3 +349,79 @@ body {
 .settings-list .muted {
   color: var(--color-text-muted);
 }
+
+.settings-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.settings-actions > * {
+  flex: 1;
+}
+
+/* --- Connect sheet -------------------------------------------------------- */
+
+.connect-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.connect-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.connect-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-height: var(--touch-target);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.connect-option--selected {
+  border-color: var(--color-accent);
+}
+
+.connect-option:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.connect-option__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+
+.connect-option__description {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.connect-option__url {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.connect-sheet__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.connect-sheet__actions > * {
+  flex: 1;
+}
