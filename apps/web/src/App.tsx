@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AgentContextProvider } from './features/agent/AgentContext'
 import { BottomNav, type Tab } from './features/nav/BottomNav'
 import { useVisualViewport } from './hooks/useVisualViewport'
 import { ChatPage } from './pages/ChatPage'
@@ -18,17 +19,19 @@ export function App() {
   useVisualViewport()
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <h1>{TITLES[tab]}</h1>
-      </header>
-      <main className="app-main">
-        {tab === 'chat' && <ChatPage />}
-        {tab === 'files' && <FilesPage />}
-        {tab === 'terminal' && <TerminalPage />}
-        {tab === 'settings' && <SettingsPage />}
-      </main>
-      <BottomNav active={tab} onSelect={setTab} />
-    </div>
+    <AgentContextProvider>
+      <div className="app-shell">
+        <header className="app-header">
+          <h1>{TITLES[tab]}</h1>
+        </header>
+        <main className="app-main">
+          {tab === 'chat' && <ChatPage />}
+          {tab === 'files' && <FilesPage />}
+          {tab === 'terminal' && <TerminalPage />}
+          {tab === 'settings' && <SettingsPage />}
+        </main>
+        <BottomNav active={tab} onSelect={setTab} />
+      </div>
+    </AgentContextProvider>
   )
 }
