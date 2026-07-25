@@ -1,11 +1,11 @@
 /**
- * OpenCode adapter — Milestone 2 chat complete; Milestone 3 adds files.
+ * OpenCode adapter — Milestone 3 files complete; Milestone 4 adds models.
  *
  * Default backend URL is loopback-only: http://127.0.0.1:4096
  */
 export const OPENCODE_DEFAULT_URL = 'http://127.0.0.1:4096'
 
-export { OpenCodeHttpClient, toFileEntry } from './OpenCodeClient'
+export { OpenCodeHttpClient, flattenConnectedModels, toFileEntry } from './OpenCodeClient'
 export type {
   OpenCodeBusEvent,
   OpenCodeClient,
@@ -14,6 +14,9 @@ export type {
   OpenCodeGlobalEvent,
   OpenCodeHealth,
   OpenCodeHttpClientOptions,
+  OpenCodeListedModel,
+  OpenCodeListedProvider,
+  OpenCodeProviderList,
   OpenCodeSession,
   Unsubscribe,
 } from './OpenCodeClient'
