@@ -35,7 +35,7 @@ Pocket Agent Mobile UI
         ↓
 AgentProvider interface        (packages/agent-core)
         ├── MockProvider       (offline demo — working today)
-        └── OpenCode adapter   (sessions, SSE chat, permissions — working)
+        └── OpenCode adapter   (chat, permissions, file list — working)
                 ↓
         OpenCode local server  (Termux)
                 ↓
@@ -78,16 +78,18 @@ to your LAN by default.
 
 ## Status
 
-Milestone 1 foundation and Milestone 2 OpenCode chat are complete:
+Milestones 1–3 are complete for the core mobile loop:
 
 - keyboard-safe chat UI with streaming replies and permission cards
 - provider connection screen (Mock offline demo; OpenCode local server)
 - OpenCode adapter: sessions, SSE event mapping, `prompt_async` chat,
   permission approve/deny, and tool output in the chat UI
-- Files and Terminal tabs visibly disabled until a provider supports them
+- Files tab: browse project folders when connected to OpenCode
+  (`listFiles` capability); Mock still shows Files as unavailable
+- Terminal tab visibly disabled until a provider supports it
 
-Next: real Files / Terminal backends and a model picker. See
-[ideas.md](ideas.md) for longer-term directions.
+Next: interactive Terminal, file contents preview, and a model picker.
+See [ideas.md](ideas.md) for longer-term directions.
 
 ## Security defaults
 
