@@ -3,12 +3,14 @@ import type {
   AgentEvent,
   AgentSession,
   CreateSessionInput,
+  FileEntry,
   ProviderCapabilities,
   ProviderConnectionConfig,
   ProviderConnectionResult,
 } from '@pocket-agent/shared-types'
 import {
   OpenCodeHttpClient,
+  toFileEntry,
   type OpenCodeClient,
   type OpenCodeHttpClientOptions,
   type OpenCodeSession,
@@ -45,8 +47,7 @@ function assertLoopbackBaseUrl(baseUrl: string): URL {
 /**
  * Adapter that exposes a local OpenCode server through AgentProvider.
  *
- * Milestone 2 Step 4: permission approve/deny against OpenCode's API.
- * UI enablement (Connect sheet) is the next step.
+ * Milestone 3 Step 2: listFiles capability against OpenCode GET /file.
  */
 export class OpenCodeProvider implements AgentProvider {
   readonly id = 'opencode'
@@ -111,7 +112,7 @@ export class OpenCodeProvider implements AgentProvider {
       streaming: true,
       sessions: true,
       permissions: true,
-      files: false,
+      files: true,
       terminal: false,
     }
   }
@@ -120,6 +121,12 @@ export class OpenCodeProvider implements AgentProvider {
     const client = this.requireClient()
     const sessions = await client.listSessions()
     return sessions.map(toAgentSession)
+  }
+
+  async listFiles(path?: string): Promise<FileEntry[]> {
+    const client = this.requireClient()
+    const nodes = await client.listFiles(path ?? '.')
+    return nodes.map(toFileEntry)
   }
 
   async createSession(input?: CreateSessionInput): Promise<AgentSession> {
