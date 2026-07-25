@@ -14,11 +14,34 @@ export interface OpenCodeSession {
   }
 }
 
+/** OpenCode bus event as delivered inside GlobalEvent.payload. */
+export interface OpenCodeBusEvent {
+  type: string
+  properties: Record<string, unknown>
+}
+
+/** Wrapper from GET /global/event. */
+export interface OpenCodeGlobalEvent {
+  directory?: string
+  payload: OpenCodeBusEvent
+}
+
+export type OpenCodeEventHandler = (event: OpenCodeGlobalEvent) => void
+export type Unsubscribe = () => void
+
 /** Typed HTTP boundary used by OpenCodeProvider. */
 export interface OpenCodeClient {
   health(): Promise<OpenCodeHealth>
   listSessions(): Promise<OpenCodeSession[]>
   createSession(input?: { title?: string }): Promise<OpenCodeSession>
+  /**
+   * Subscribe to GET /global/event (SSE). Returns an unsubscribe function.
+   * The stream runs until unsubscribe, disconnect, or a fatal read error.
+   */
+  subscribeGlobalEvents(
+    onEvent: OpenCodeEventHandler,
+    onError?: (error: Error) => void,
+  ): Unsubscribe
 }
 
 export interface OpenCodeHttpClientOptions {
@@ -53,10 +76,20 @@ function isSession(value: unknown): value is OpenCodeSession {
   return typeof time.created === 'number' && typeof time.updated === 'number'
 }
 
+function isGlobalEvent(value: unknown): value is OpenCodeGlobalEvent {
+  if (!value || typeof value !== 'object') return false
+  const candidate = value as Record<string, unknown>
+  const payload = candidate.payload
+  if (!payload || typeof payload !== 'object') return false
+  const bus = payload as Record<string, unknown>
+  // properties may be {} (e.g. server.connected); still required as an object.
+  return typeof bus.type === 'string' && bus.properties !== null && typeof bus.properties === 'object'
+}
+
 /**
  * Fetch-based OpenCode client.
  *
- * Event-stream and permission endpoints are added in later Milestone 2 steps.
+ * Permission reply endpoints are added in a later Milestone 2 step.
  */
 export class OpenCodeHttpClient implements OpenCodeClient {
   private readonly baseUrl: string
@@ -95,15 +128,94 @@ export class OpenCodeHttpClient implements OpenCodeClient {
     return body
   }
 
+  subscribeGlobalEvents(
+    onEvent: OpenCodeEventHandler,
+    onError?: (error: Error) => void,
+  ): Unsubscribe {
+    const controller = new AbortController()
+    void this.readEventStream(controller.signal, onEvent, onError)
+    return () => {
+      controller.abort()
+    }
+  }
+
+  private async readEventStream(
+    signal: AbortSignal,
+    onEvent: OpenCodeEventHandler,
+    onError?: (error: Error) => void,
+  ): Promise<void> {
+    try {
+      const headers = this.authHeaders()
+      headers.set('Accept', 'text/event-stream')
+
+      const response = await this.fetch(`${this.baseUrl}/global/event`, {
+        method: 'GET',
+        headers,
+        signal,
+      })
+
+      if (!response.ok) {
+        throw new Error(`OpenCode GET /global/event failed (HTTP ${response.status}).`)
+      }
+      if (!response.body) {
+        throw new Error('OpenCode event stream returned no body.')
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (!signal.aborted) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+
+        let separator = buffer.indexOf('\n\n')
+        while (separator !== -1) {
+          const chunk = buffer.slice(0, separator)
+          buffer = buffer.slice(separator + 2)
+          const data = extractSseData(chunk)
+          if (data) {
+            let parsed: unknown
+            try {
+              parsed = JSON.parse(data)
+            } catch {
+              separator = buffer.indexOf('\n\n')
+              continue
+            }
+            if (isGlobalEvent(parsed)) {
+              onEvent({
+                directory: parsed.directory,
+                payload: {
+                  type: parsed.payload.type,
+                  properties: parsed.payload.properties as Record<string, unknown>,
+                },
+              })
+            }
+          }
+          separator = buffer.indexOf('\n\n')
+        }
+      }
+    } catch (err) {
+      if (signal.aborted) return
+      onError?.(err instanceof Error ? err : new Error('OpenCode event stream failed.'))
+    }
+  }
+
+  private authHeaders(): Headers {
+    const headers = new Headers()
+    if (this.password) {
+      headers.set('Authorization', basicAuthorization(this.password))
+    }
+    return headers
+  }
+
   private async requestJson(
     method: string,
     path: string,
     body?: unknown,
   ): Promise<unknown> {
-    const headers = new Headers()
-    if (this.password) {
-      headers.set('Authorization', basicAuthorization(this.password))
-    }
+    const headers = this.authHeaders()
     if (body !== undefined) {
       headers.set('Content-Type', 'application/json')
     }
@@ -120,4 +232,17 @@ export class OpenCodeHttpClient implements OpenCodeClient {
 
     return response.json()
   }
+}
+
+/** Collect `data:` lines from one SSE event block. */
+function extractSseData(block: string): string | null {
+  const lines = block.split(/\r?\n/)
+  const dataLines: string[] = []
+  for (const line of lines) {
+    if (line.startsWith('data:')) {
+      dataLines.push(line.slice(5).trimStart())
+    }
+  }
+  if (dataLines.length === 0) return null
+  return dataLines.join('\n')
 }

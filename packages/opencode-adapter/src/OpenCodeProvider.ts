@@ -12,7 +12,10 @@ import {
   type OpenCodeClient,
   type OpenCodeHttpClientOptions,
   type OpenCodeSession,
+  type Unsubscribe,
 } from './OpenCodeClient'
+import { OpenCodeEventMapper } from './OpenCodeEventMapper'
+import { OpenCodeEventRouter } from './OpenCodeEventRouter'
 
 export type OpenCodeClientFactory = (options: OpenCodeHttpClientOptions) => OpenCodeClient
 
@@ -42,14 +45,17 @@ function assertLoopbackBaseUrl(baseUrl: string): URL {
 /**
  * Adapter that exposes a local OpenCode server through AgentProvider.
  *
- * Milestone 2 Step 1: connect + real session list/create.
- * Streaming and permission mapping arrive in later Milestone 2 steps.
+ * Milestone 2 Step 2: SSE event stream + mapping to AgentEvent.
+ * sendMessage / permission replies arrive in later steps.
  */
 export class OpenCodeProvider implements AgentProvider {
   readonly id = 'opencode'
   readonly name = 'OpenCode (local server)'
 
   private client: OpenCodeClient | null = null
+  private unsubscribeEvents: Unsubscribe | null = null
+  private readonly mapper = new OpenCodeEventMapper()
+  private readonly router = new OpenCodeEventRouter()
   private readonly createClient: OpenCodeClientFactory
 
   constructor(createClient: OpenCodeClientFactory = (options) => new OpenCodeHttpClient(options)) {
@@ -71,13 +77,14 @@ export class OpenCodeProvider implements AgentProvider {
       }
 
       this.client = client
+      await this.startEventStream(client)
       return {
         ok: true,
         message: 'Connected to local OpenCode server.',
         backendVersion: health.version,
       }
     } catch (err) {
-      this.client = null
+      this.teardown()
       return {
         ok: false,
         message: err instanceof Error ? err.message : 'OpenCode connection failed.',
@@ -86,11 +93,11 @@ export class OpenCodeProvider implements AgentProvider {
   }
 
   async disconnect(): Promise<void> {
-    this.client = null
+    this.teardown()
   }
 
   getCapabilities(): ProviderCapabilities {
-    // Sessions work. Chat streaming / permissions still Milestone 2.
+    // Sessions + event plumbing work. Chat sendMessage still a later step.
     return {
       streaming: false,
       sessions: true,
@@ -125,6 +132,63 @@ export class OpenCodeProvider implements AgentProvider {
   async denyPermission(_requestId: string): Promise<void> {
     this.requireClient()
     throw new Error('OpenCode permissions are implemented in a later Milestone 2 step.')
+  }
+
+  /**
+   * Test/helper hook: observe mapped AgentEvents after connect().
+   * Not part of AgentProvider — used while building Milestone 2.
+   */
+  subscribeAgentEvents(listener: (event: AgentEvent) => void): Unsubscribe {
+    return this.router.subscribe(listener)
+  }
+
+  private startEventStream(client: OpenCodeClient): Promise<void> {
+    this.unsubscribeEvents?.()
+    this.mapper.reset()
+    this.router.clear()
+
+    return new Promise((resolve, reject) => {
+      let settled = false
+      const timeout = setTimeout(() => {
+        if (settled) return
+        settled = true
+        this.unsubscribeEvents?.()
+        this.unsubscribeEvents = null
+        reject(new Error('Timed out waiting for OpenCode event stream.'))
+      }, 5000)
+
+      this.unsubscribeEvents = client.subscribeGlobalEvents(
+        (globalEvent) => {
+          if (!settled && globalEvent.payload.type === 'server.connected') {
+            settled = true
+            clearTimeout(timeout)
+            resolve()
+          }
+          for (const agentEvent of this.mapper.map(globalEvent.payload)) {
+            this.router.publish(agentEvent)
+          }
+        },
+        (error) => {
+          this.router.publish({
+            type: 'error',
+            message: 'Lost connection to the OpenCode event stream.',
+          })
+          if (!settled) {
+            settled = true
+            clearTimeout(timeout)
+            reject(error)
+          }
+        },
+      )
+    })
+  }
+
+  private teardown(): void {
+    this.unsubscribeEvents?.()
+    this.unsubscribeEvents = null
+    this.client = null
+    this.mapper.reset()
+    this.router.clear()
   }
 
   private requireClient(): OpenCodeClient {
