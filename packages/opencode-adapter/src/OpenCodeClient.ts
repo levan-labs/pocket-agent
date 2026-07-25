@@ -1,3 +1,5 @@
+import type { FileEntry, FileEntryKind } from '@pocket-agent/shared-types'
+
 /** Raw response from OpenCode's GET /global/health endpoint. */
 export interface OpenCodeHealth {
   healthy: boolean
@@ -12,6 +14,15 @@ export interface OpenCodeSession {
     created: number
     updated: number
   }
+}
+
+/** Raw node from OpenCode's GET /file?path=… */
+export interface OpenCodeFileNode {
+  name: string
+  path: string
+  absolute: string
+  type: 'file' | 'directory'
+  ignored: boolean
 }
 
 /** OpenCode bus event as delivered inside GlobalEvent.payload. */
@@ -62,6 +73,8 @@ export interface OpenCodeClient {
     onEvent: OpenCodeEventHandler,
     onError?: (error: Error) => void,
   ): Unsubscribe
+  /** GET /file?path=… — list files and directories at a path. */
+  listFiles(path: string): Promise<OpenCodeFileNode[]>
 }
 
 export interface OpenCodeHttpClientOptions {
@@ -106,11 +119,29 @@ function isGlobalEvent(value: unknown): value is OpenCodeGlobalEvent {
   return typeof bus.type === 'string' && bus.properties !== null && typeof bus.properties === 'object'
 }
 
-/**
- * Fetch-based OpenCode client.
- *
- * Permission reply endpoints are added in a later Milestone 2 step.
- */
+function isFileNode(value: unknown): value is OpenCodeFileNode {
+  if (!value || typeof value !== 'object') return false
+  const candidate = value as Record<string, unknown>
+  return (
+    typeof candidate.name === 'string' &&
+    typeof candidate.path === 'string' &&
+    typeof candidate.absolute === 'string' &&
+    (candidate.type === 'file' || candidate.type === 'directory') &&
+    typeof candidate.ignored === 'boolean'
+  )
+}
+
+/** Map an OpenCode file node to the provider-neutral FileEntry. */
+export function toFileEntry(node: OpenCodeFileNode): FileEntry {
+  const kind: FileEntryKind = node.type
+  return {
+    name: node.name,
+    path: node.path,
+    kind,
+  }
+}
+
+/** Fetch-based OpenCode client (HTTP + SSE). */
 export class OpenCodeHttpClient implements OpenCodeClient {
   private readonly baseUrl: string
   private readonly password?: string
@@ -218,6 +249,15 @@ export class OpenCodeHttpClient implements OpenCodeClient {
     return () => {
       controller.abort()
     }
+  }
+
+  async listFiles(path: string): Promise<OpenCodeFileNode[]> {
+    const query = new URLSearchParams({ path })
+    const body = await this.requestJson('GET', `/file?${query.toString()}`)
+    if (!Array.isArray(body) || !body.every(isFileNode)) {
+      throw new Error('OpenCode file list returned an invalid response.')
+    }
+    return body
   }
 
   private async readEventStream(
