@@ -58,6 +58,7 @@ export class MockProvider implements AgentProvider {
       permissions: true,
       files: false,
       terminal: false,
+      models: false,
     }
   }
 

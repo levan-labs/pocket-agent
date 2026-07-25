@@ -3,6 +3,7 @@ import type {
   AgentSession,
   CreateSessionInput,
   FileEntry,
+  ModelOption,
   ProviderCapabilities,
   ProviderConnectionConfig,
   ProviderConnectionResult,
@@ -37,4 +38,13 @@ export interface AgentProvider {
 
   /** Only present when getCapabilities().files is true. */
   listFiles?(path?: string): Promise<FileEntry[]>
+
+  /** Only present when getCapabilities().models is true. */
+  listModels?(): Promise<ModelOption[]>
+
+  /** Only present when getCapabilities().models is true. */
+  getSelectedModel?(): ModelOption | null
+
+  /** Only present when getCapabilities().models is true. */
+  setSelectedModel?(model: { providerId: string; id: string }): Promise<void>
 }

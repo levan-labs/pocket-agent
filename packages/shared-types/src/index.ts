@@ -41,6 +41,24 @@ export interface ProviderCapabilities {
   permissions: boolean
   files: boolean
   terminal: boolean
+  /** Provider can list and select models (e.g. OpenCode Zen / OpenRouter). */
+  models: boolean
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+/** A selectable model exposed by a connected agent backend. */
+export interface ModelOption {
+  /** Backend model id (e.g. "ling-3.0-flash-free"). */
+  id: string
+  /** Backend provider id (e.g. "opencode", "openrouter"). */
+  providerId: string
+  /** Human-readable model name. */
+  name: string
+  /** Human-readable provider name when available. */
+  providerName?: string
 }
 
 // ---------------------------------------------------------------------------

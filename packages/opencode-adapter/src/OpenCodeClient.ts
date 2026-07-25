@@ -25,6 +25,31 @@ export interface OpenCodeFileNode {
   ignored: boolean
 }
 
+/** One model from GET /provider (subset used by the picker). */
+export interface OpenCodeListedModel {
+  id: string
+  providerID: string
+  name: string
+}
+
+/** One provider from GET /provider (subset used by the picker). */
+export interface OpenCodeListedProvider {
+  id: string
+  name: string
+  models: OpenCodeListedModel[]
+}
+
+/**
+ * Result of GET /provider.
+ * `connected` lists provider ids that are usable (keys/env configured).
+ * `defaults` maps providerID → default modelID.
+ */
+export interface OpenCodeProviderList {
+  providers: OpenCodeListedProvider[]
+  connected: string[]
+  defaults: Record<string, string>
+}
+
 /** OpenCode bus event as delivered inside GlobalEvent.payload. */
 export interface OpenCodeBusEvent {
   type: string
@@ -75,6 +100,8 @@ export interface OpenCodeClient {
   ): Unsubscribe
   /** GET /file?path=… — list files and directories at a path. */
   listFiles(path: string): Promise<OpenCodeFileNode[]>
+  /** GET /provider — configured providers, connected ids, and defaults. */
+  listProviders(): Promise<OpenCodeProviderList>
 }
 
 export interface OpenCodeHttpClientOptions {
@@ -139,6 +166,67 @@ export function toFileEntry(node: OpenCodeFileNode): FileEntry {
     path: node.path,
     kind,
   }
+}
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  return Object.values(value).every((v) => typeof v === 'string')
+}
+
+function parseListedModel(value: unknown, fallbackProviderID: string): OpenCodeListedModel | null {
+  if (!value || typeof value !== 'object') return null
+  const candidate = value as Record<string, unknown>
+  if (typeof candidate.id !== 'string' || typeof candidate.name !== 'string') return null
+  const providerID =
+    typeof candidate.providerID === 'string' ? candidate.providerID : fallbackProviderID
+  return { id: candidate.id, providerID, name: candidate.name }
+}
+
+function parseListedProvider(value: unknown): OpenCodeListedProvider | null {
+  if (!value || typeof value !== 'object') return null
+  const candidate = value as Record<string, unknown>
+  if (typeof candidate.id !== 'string' || typeof candidate.name !== 'string') return null
+  if (!candidate.models || typeof candidate.models !== 'object') return null
+
+  const models: OpenCodeListedModel[] = []
+  for (const modelValue of Object.values(candidate.models as Record<string, unknown>)) {
+    const model = parseListedModel(modelValue, candidate.id)
+    if (model) models.push(model)
+  }
+  models.sort((a, b) => a.name.localeCompare(b.name))
+  return { id: candidate.id, name: candidate.name, models }
+}
+
+function parseProviderList(value: unknown): OpenCodeProviderList | null {
+  if (!value || typeof value !== 'object') return null
+  const candidate = value as Record<string, unknown>
+  if (!Array.isArray(candidate.all) || !Array.isArray(candidate.connected)) return null
+  if (!isStringRecord(candidate.default)) return null
+  if (!candidate.connected.every((id) => typeof id === 'string')) return null
+
+  const providers: OpenCodeListedProvider[] = []
+  for (const raw of candidate.all) {
+    const provider = parseListedProvider(raw)
+    if (provider) providers.push(provider)
+  }
+  providers.sort((a, b) => a.name.localeCompare(b.name))
+
+  return {
+    providers,
+    connected: candidate.connected as string[],
+    defaults: candidate.default,
+  }
+}
+
+/** Flatten connected providers into picker-friendly model rows. */
+export function flattenConnectedModels(list: OpenCodeProviderList): OpenCodeListedModel[] {
+  const connected = new Set(list.connected)
+  const models: OpenCodeListedModel[] = []
+  for (const provider of list.providers) {
+    if (!connected.has(provider.id)) continue
+    models.push(...provider.models)
+  }
+  return models
 }
 
 /** Fetch-based OpenCode client (HTTP + SSE). */
@@ -258,6 +346,15 @@ export class OpenCodeHttpClient implements OpenCodeClient {
       throw new Error('OpenCode file list returned an invalid response.')
     }
     return body
+  }
+
+  async listProviders(): Promise<OpenCodeProviderList> {
+    const body = await this.requestJson('GET', '/provider')
+    const parsed = parseProviderList(body)
+    if (!parsed) {
+      throw new Error('OpenCode provider list returned an invalid response.')
+    }
+    return parsed
   }
 
   private async readEventStream(
