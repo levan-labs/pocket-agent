@@ -46,10 +46,20 @@ just switch apps — the dev server keeps running in the background (consider
 npm install -g opencode-ai
 ```
 
-2. Start the server with CORS for the Pocket Agent web app:
+2. Start both processes with one command (from the repo root):
+
+```bash
+npm run dev:opencode
+```
+
+That runs `opencode serve` on `:4096` (CORS allowed for the web app) and
+Vite on `:5173`. Ctrl+C stops both.
+
+To run them separately instead:
 
 ```bash
 opencode serve --hostname 127.0.0.1 --port 4096 --cors http://127.0.0.1:5173
+npm run dev
 ```
 
 3. In Pocket Agent: **Settings → Connect… → OpenCode (local server)**.

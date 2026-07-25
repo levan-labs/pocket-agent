@@ -13,6 +13,7 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace @pocket-agent/web",
+    "dev:opencode": "bash scripts/dev-opencode.sh",
     "build": "npm run build --workspace @pocket-agent/web",
     "preview": "npm run preview --workspace @pocket-agent/web",
     "typecheck": "npm run typecheck --workspaces --if-present"

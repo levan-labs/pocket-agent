@@ -64,10 +64,14 @@ Requires Node.js 20.19+ (22 LTS recommended) and npm.
 
 ```bash
 npm install
-npm run dev        # dev server on http://127.0.0.1:5173
-npm run typecheck  # typecheck all workspaces
-npm run build      # production build of apps/web
+npm run dev           # web UI only (Mock works without OpenCode)
+npm run dev:opencode  # OpenCode + web UI together (needs opencode on PATH)
+npm run typecheck     # typecheck all workspaces
+npm run build         # production build of apps/web
 ```
+
+`dev:opencode` starts `opencode serve` on `:4096` and Vite on `:5173`, then
+stops both on Ctrl+C. Install OpenCode first: `npm install -g opencode-ai`.
 
 The dev server binds to `127.0.0.1` only. Pocket Agent never exposes itself
 to your LAN by default.
