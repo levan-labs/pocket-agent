@@ -1,8 +1,8 @@
 # Pocket Agent Architecture
 
-Status: Milestone 1 foundation complete. OpenCode chat/session mapping and
-interactive Files/Terminal remain *Milestone 2*. Sections marked *(planned)*
-describe design intent that is not implemented yet.
+Status: Milestone 1 foundation and Milestone 2 OpenCode chat are complete.
+Interactive Files/Terminal and a model picker remain planned. Sections
+marked *(planned)* describe design intent that is not implemented yet.
 
 ## Layers
 
@@ -18,14 +18,14 @@ OpenCode local server           external process (Termux)
 Zen / OpenRouter / other model providers
 ```
 
-Future shape (Milestone 2+):
+Future shape (post–Milestone 2):
 
 ```
 Pocket Agent UI
         ↓
 AgentProvider interface
         ├── MockProvider                 (offline demo — working)
-        ├── OpenCodeProvider             (health check — working; chat planned)
+        ├── OpenCodeProvider             (chat, sessions, permissions — working)
         ├── custom Pocket Agent engine   (planned)
         ├── remote provider              (planned)
         └── optional local/offline model (planned)
@@ -62,9 +62,9 @@ surface the UI is allowed to use. Rules:
   demo the UI without any backend. Simulates streaming replies and an
   approval-based permission flow *(Milestone 1 Step 4)*.
 - **`@pocket-agent/opencode-adapter`** — translates between `AgentProvider`
-  and a local OpenCode server. Typed HTTP client + connect/health skeleton
-  *(Milestone 1 Step 6)*. Real SSE mapping and session sync are
-  *Milestone 2*.
+  and a local OpenCode server. Typed HTTP client, session list/create,
+  SSE → `AgentEvent` mapping, `prompt_async` chat, and permission
+  approve/deny *(Milestone 2)*. Files/terminal capability still off.
 - **`@pocket-agent/ui`** — small mobile-first primitives (Button, Sheet,
   Icon) *(Milestone 1 Step 2)*.
 - **`@pocket-agent/web`** — the app. React Context + hooks; tab navigation

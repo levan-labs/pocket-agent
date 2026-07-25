@@ -36,30 +36,11 @@ export function ChatPage() {
     return session.id
   }
 
-  function upsertAssistantText(messageId: string, sessionId: string, delta: string) {
-    setMessages((prev) => {
-      const existing = prev.find((m) => m.id === messageId)
-      if (!existing) {
-        return [
-          ...prev,
-          {
-            id: messageId,
-            sessionId,
-            role: 'assistant' as const,
-            text: delta,
-            createdAt: new Date().toISOString(),
-            pending: true,
-          },
-        ]
-      }
-      return prev.map((m) => (m.id === messageId ? { ...m, text: m.text + delta } : m))
-    })
-  }
-
   async function handleSend(text: string) {
     if (!provider) return
     setError(null)
     setStreaming(true)
+    const thinkingId = `thinking-${crypto.randomUUID()}`
     try {
       const sessionId = await ensureSession()
 
@@ -72,40 +53,129 @@ export function ChatPage() {
           text,
           createdAt: new Date().toISOString(),
         },
+        {
+          id: thinkingId,
+          sessionId,
+          role: 'assistant',
+          text: 'Working…',
+          createdAt: new Date().toISOString(),
+          pending: true,
+        },
       ])
+
+      let assistantId: string | null = null
+
+      function ensureAssistant(messageId: string, sessionIdForMsg: string) {
+        assistantId = messageId
+        setMessages((prev) => {
+          const withoutThinking = prev.filter((m) => m.id !== thinkingId)
+          if (withoutThinking.some((m) => m.id === messageId)) return withoutThinking
+          return [
+            ...withoutThinking,
+            {
+              id: messageId,
+              sessionId: sessionIdForMsg,
+              role: 'assistant' as const,
+              text: '',
+              createdAt: new Date().toISOString(),
+              pending: true,
+            },
+          ]
+        })
+      }
+
+      function appendAssistantText(messageId: string, chunk: string) {
+        ensureAssistant(messageId, sessionId)
+        setMessages((prev) =>
+          prev.map((m) => (m.id === messageId ? { ...m, text: m.text + chunk } : m)),
+        )
+      }
 
       for await (const event of provider.sendMessage(sessionId, text)) {
         switch (event.type) {
           case 'message.start':
-            upsertAssistantText(event.messageId, event.sessionId, '')
+            ensureAssistant(event.messageId, event.sessionId)
             break
           case 'message.delta':
-            upsertAssistantText(event.messageId, sessionId, event.text)
+            appendAssistantText(event.messageId, event.text)
             break
+          case 'tool.start':
+          case 'tool.update':
+          case 'tool.end': {
+            const call = event.toolCall
+            // Attach tool activity to the current assistant turn when possible.
+            const messageId = assistantId ?? thinkingId
+            if (event.type === 'tool.start') {
+              const line = call.detail
+                ? `\n\nRunning ${call.tool}:\n${call.detail}\n`
+                : `\n\nRunning ${call.tool}…\n`
+              if (messageId === thinkingId) {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === thinkingId ? { ...m, text: (m.text === 'Working…' ? '' : m.text) + line } : m,
+                  ),
+                )
+              } else {
+                appendAssistantText(messageId, line)
+              }
+            }
+            if (event.type === 'tool.end' && call.output) {
+              const line = `\n${call.output.trimEnd()}\n`
+              if (assistantId) {
+                appendAssistantText(assistantId, line)
+              } else {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === thinkingId ? { ...m, text: (m.text === 'Working…' ? '' : m.text) + line } : m,
+                  ),
+                )
+              }
+            }
+            break
+          }
           case 'message.end':
             setMessages((prev) =>
-              prev.map((m) => (m.id === event.messageId ? { ...m, pending: false } : m)),
+              prev.flatMap((m) => {
+                if (m.id === thinkingId) return []
+                if (m.id === event.messageId || m.id === assistantId) {
+                  const text = m.text.trim()
+                    ? m.text
+                    : 'Done.'
+                  return [{ ...m, text, pending: false }]
+                }
+                return [m]
+              }),
             )
             break
           case 'permission.requested':
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === thinkingId || m.id === assistantId
+                  ? { ...m, text: m.text.trim() ? m.text : 'Waiting for your approval…' }
+                  : m,
+              ),
+            )
             setPermission(event.request)
             break
           case 'permission.resolved':
             setPermission(null)
             break
           case 'error':
+            setMessages((prev) => prev.filter((m) => m.id !== thinkingId))
             setError(event.message)
             break
           default:
-            // tool.* and session.updated are not rendered yet.
             break
         }
       }
+
+      // If the turn ended without replacing the thinking bubble, remove it.
+      setMessages((prev) => prev.filter((m) => m.id !== thinkingId))
     } catch (err) {
+      setMessages((prev) => prev.filter((m) => m.id !== thinkingId))
       setError(err instanceof Error ? err.message : 'Something went wrong.')
     } finally {
       setStreaming(false)
-      setPermission(null)
     }
   }
 
@@ -128,6 +198,11 @@ export function ChatPage() {
       {error && (
         <p className="chat-error" role="alert">
           {error}
+        </p>
+      )}
+      {streaming && !permission && (
+        <p className="chat-status" role="status">
+          Waiting for OpenCode…
         </p>
       )}
       {permission && (

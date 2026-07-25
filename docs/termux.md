@@ -1,7 +1,7 @@
 # Running Pocket Agent in Termux
 
-Status: Milestone 1 foundation complete. Use the Mock provider for chat demos
-today. Connecting a real OpenCode server for chat is Milestone 2.
+Status: Milestone 2 chat path works against a local OpenCode server.
+Use Mock for offline demos, or OpenCode when `opencode serve` is running.
 
 ## Prerequisites
 
@@ -38,12 +38,25 @@ Tip: use Termux's split-screen or floating window alongside the browser, or
 just switch apps — the dev server keeps running in the background (consider
 `termux-wake-lock` to prevent Android from killing it).
 
-## 4. Optional: OpenCode backend (Milestone 2)
+## 4. Optional: OpenCode backend
 
-Pocket Agent's first real backend is a local OpenCode server, expected at
-`http://127.0.0.1:4096`. Full setup instructions will be added when the
-OpenCode adapter is functional. Until then, the built-in mock provider is
-the way to explore the UI.
+1. Install OpenCode (same machine / Termux):
+
+```bash
+npm install -g opencode-ai
+```
+
+2. Start the server with CORS for the Pocket Agent web app:
+
+```bash
+opencode serve --hostname 127.0.0.1 --port 4096 --cors http://127.0.0.1:5173
+```
+
+3. In Pocket Agent: **Settings → Connect… → OpenCode (local server)**.
+
+4. Chat as usual. Permission prompts appear as Approve once / Deny.
+
+Loopback only by default — nothing is exposed to your LAN.
 
 ## Troubleshooting
 

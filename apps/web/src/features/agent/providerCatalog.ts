@@ -27,11 +27,10 @@ export const PROVIDER_CATALOG: ProviderDescriptor[] = [
   {
     id: 'opencode',
     name: 'OpenCode (local server)',
-    description: 'Talks to an OpenCode server running on this device.',
+    description:
+      'Talks to a local OpenCode server (default http://127.0.0.1:4096). Start it with opencode serve and allow CORS for the web app.',
     baseUrl: OPENCODE_DEFAULT_URL,
-    // Skeleton exists (health check), but chat/session mapping is Milestone 2.
-    available: false,
-    unavailableNote: 'Chat integration arrives in Milestone 2',
+    available: true,
   },
 ]
 
