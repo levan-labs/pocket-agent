@@ -25,10 +25,31 @@ export function App() {
           <h1>{TITLES[tab]}</h1>
         </header>
         <main className="app-main">
-          {tab === 'chat' && <ChatPage />}
-          {tab === 'files' && <FilesPage />}
-          {tab === 'terminal' && <TerminalPage />}
-          {tab === 'settings' && <SettingsPage />}
+          {/* Keep pages mounted so in-tab state (e.g. chat history) survives switches. */}
+          <div
+            className={tab === 'chat' ? 'tab-panel' : 'tab-panel tab-panel--hidden'}
+            aria-hidden={tab !== 'chat'}
+          >
+            <ChatPage />
+          </div>
+          <div
+            className={tab === 'files' ? 'tab-panel' : 'tab-panel tab-panel--hidden'}
+            aria-hidden={tab !== 'files'}
+          >
+            <FilesPage />
+          </div>
+          <div
+            className={tab === 'terminal' ? 'tab-panel' : 'tab-panel tab-panel--hidden'}
+            aria-hidden={tab !== 'terminal'}
+          >
+            <TerminalPage />
+          </div>
+          <div
+            className={tab === 'settings' ? 'tab-panel' : 'tab-panel tab-panel--hidden'}
+            aria-hidden={tab !== 'settings'}
+          >
+            <SettingsPage />
+          </div>
         </main>
         <BottomNav active={tab} onSelect={setTab} />
       </div>
