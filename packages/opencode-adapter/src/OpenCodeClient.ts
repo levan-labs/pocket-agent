@@ -35,6 +35,17 @@ export interface OpenCodeClient {
   listSessions(): Promise<OpenCodeSession[]>
   createSession(input?: { title?: string }): Promise<OpenCodeSession>
   /**
+   * POST /session/:id/prompt_async — fire-and-forget prompt (204).
+   * Replies arrive on the global event stream.
+   */
+  promptAsync(
+    sessionId: string,
+    input: {
+      text: string
+      model?: { providerID: string; modelID: string }
+    },
+  ): Promise<void>
+  /**
    * Subscribe to GET /global/event (SSE). Returns an unsubscribe function.
    * The stream runs until unsubscribe, disconnect, or a fatal read error.
    */
@@ -126,6 +137,40 @@ export class OpenCodeHttpClient implements OpenCodeClient {
       throw new Error('OpenCode create session returned an invalid response.')
     }
     return body
+  }
+
+  async promptAsync(
+    sessionId: string,
+    input: {
+      text: string
+      model?: { providerID: string; modelID: string }
+    },
+  ): Promise<void> {
+    const body: Record<string, unknown> = {
+      parts: [{ type: 'text', text: input.text }],
+    }
+    if (input.model) {
+      body.model = input.model
+    }
+
+    const headers = this.authHeaders()
+    headers.set('Content-Type', 'application/json')
+
+    const response = await this.fetch(
+      `${this.baseUrl}/session/${encodeURIComponent(sessionId)}/prompt_async`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      },
+    )
+
+    // OpenCode returns 204 No Content on success.
+    if (!response.ok) {
+      throw new Error(
+        `OpenCode POST /session/:id/prompt_async failed (HTTP ${response.status}).`,
+      )
+    }
   }
 
   subscribeGlobalEvents(

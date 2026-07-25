@@ -45,8 +45,8 @@ function assertLoopbackBaseUrl(baseUrl: string): URL {
 /**
  * Adapter that exposes a local OpenCode server through AgentProvider.
  *
- * Milestone 2 Step 2: SSE event stream + mapping to AgentEvent.
- * sendMessage / permission replies arrive in later steps.
+ * Milestone 2 Step 3: sendMessage via prompt_async + mapped SSE events.
+ * Permission reply endpoints arrive in the next step.
  */
 export class OpenCodeProvider implements AgentProvider {
   readonly id = 'opencode'
@@ -57,9 +57,18 @@ export class OpenCodeProvider implements AgentProvider {
   private readonly mapper = new OpenCodeEventMapper()
   private readonly router = new OpenCodeEventRouter()
   private readonly createClient: OpenCodeClientFactory
+  private readonly defaultModel: { providerID: string; modelID: string }
 
-  constructor(createClient: OpenCodeClientFactory = (options) => new OpenCodeHttpClient(options)) {
+  constructor(
+    createClient: OpenCodeClientFactory = (options) => new OpenCodeHttpClient(options),
+    defaultModel: { providerID: string; modelID: string } = {
+      // Free OpenCode Zen model available without extra local keys.
+      providerID: 'opencode',
+      modelID: 'ling-3.0-flash-free',
+    },
+  ) {
     this.createClient = createClient
+    this.defaultModel = defaultModel
   }
 
   async connect(config: ProviderConnectionConfig): Promise<ProviderConnectionResult> {
@@ -97,9 +106,8 @@ export class OpenCodeProvider implements AgentProvider {
   }
 
   getCapabilities(): ProviderCapabilities {
-    // Sessions + event plumbing work. Chat sendMessage still a later step.
     return {
-      streaming: false,
+      streaming: true,
       sessions: true,
       permissions: false,
       files: false,
@@ -119,9 +127,54 @@ export class OpenCodeProvider implements AgentProvider {
     return toAgentSession(session)
   }
 
-  async *sendMessage(_sessionId: string, _message: string): AsyncIterable<AgentEvent> {
-    this.requireClient()
-    throw new Error('OpenCode streaming is implemented in a later Milestone 2 step.')
+  async *sendMessage(sessionId: string, message: string): AsyncIterable<AgentEvent> {
+    const client = this.requireClient()
+    const queue: AgentEvent[] = []
+    let notify: (() => void) | null = null
+    let finished = false
+
+    const unsub = this.router.subscribeSession(sessionId, (event) => {
+      queue.push(event)
+      if (event.type === 'message.end' || event.type === 'error') {
+        finished = true
+      }
+      notify?.()
+    })
+
+    try {
+      await client.promptAsync(sessionId, {
+        text: message,
+        model: this.defaultModel,
+      })
+
+      const deadline = Date.now() + 120_000
+      while (Date.now() < deadline) {
+        while (queue.length > 0) {
+          const event = queue.shift()!
+          yield event
+        }
+        if (finished) break
+        await new Promise<void>((resolve) => {
+          notify = resolve
+          setTimeout(resolve, 250)
+        })
+        notify = null
+      }
+
+      // Drain anything that arrived at the deadline edge.
+      while (queue.length > 0) {
+        yield queue.shift()!
+      }
+
+      if (!finished) {
+        yield {
+          type: 'error',
+          message: 'Timed out waiting for the OpenCode assistant reply.',
+        }
+      }
+    } finally {
+      unsub()
+    }
   }
 
   async approvePermission(_requestId: string): Promise<void> {

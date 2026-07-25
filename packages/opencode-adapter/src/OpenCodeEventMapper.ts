@@ -20,16 +20,20 @@ export interface OpenCodeGlobalEvent {
 /**
  * Translates OpenCode bus events into provider-neutral AgentEvents.
  *
- * Stateful for message.start/end: tracks which assistant message ids have
- * already emitted start, so repeated message.updated events stay correct.
+ * Stateful for message.start/end and for part types: only text-part deltas
+ * become message.delta (reasoning parts also use field "text").
  */
 export class OpenCodeEventMapper {
   private readonly startedMessages = new Set<string>()
+  /** partID → part.type from message.part.updated */
+  private readonly partTypes = new Map<string, string>()
 
   map(busEvent: OpenCodeBusEvent): AgentEvent[] {
     switch (busEvent.type) {
       case 'message.updated':
         return this.mapMessageUpdated(busEvent.properties)
+      case 'message.part.updated':
+        return this.mapPartUpdated(busEvent.properties)
       case 'message.part.delta':
         return this.mapPartDelta(busEvent.properties)
       case 'permission.asked':
@@ -49,6 +53,18 @@ export class OpenCodeEventMapper {
   /** Call when a session is no longer tracked (disconnect / session switch). */
   reset(): void {
     this.startedMessages.clear()
+    this.partTypes.clear()
+  }
+
+  private mapPartUpdated(properties: Record<string, unknown>): AgentEvent[] {
+    const part = asRecord(properties.part)
+    if (!part) return []
+    const partId = asString(part.id)
+    const partType = asString(part.type)
+    if (partId && partType) {
+      this.partTypes.set(partId, partType)
+    }
+    return []
   }
 
   private mapMessageUpdated(properties: Record<string, unknown>): AgentEvent[] {
@@ -69,7 +85,7 @@ export class OpenCodeEventMapper {
     const time = asRecord(info.time)
     const completed = time && typeof time.completed === 'number'
     const finish = asString(info.finish)
-    if (completed || finish) {
+    if ((completed || finish) && this.startedMessages.has(messageId)) {
       events.push({ type: 'message.end', messageId })
       this.startedMessages.delete(messageId)
     }
@@ -90,11 +106,15 @@ export class OpenCodeEventMapper {
     const messageId = asString(properties.messageID)
     const delta = asString(properties.delta)
     const field = asString(properties.field)
+    const partId = asString(properties.partID)
     const sessionId = asString(properties.sessionID)
     if (!messageId || delta == null || !sessionId) return []
 
-    // Stream visible assistant text; ignore non-text fields (e.g. reasoning metadata).
     if (field && field !== 'text' && field !== 'content') return []
+
+    // Prefer known part types; if unknown yet, allow text-field deltas through.
+    const partType = partId ? this.partTypes.get(partId) : undefined
+    if (partType && partType !== 'text') return []
 
     const events: AgentEvent[] = []
     if (!this.startedMessages.has(messageId)) {
