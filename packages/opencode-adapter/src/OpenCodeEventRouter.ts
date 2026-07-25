@@ -8,15 +8,20 @@ export type Unsubscribe = () => void
  *
  * Because message.delta / message.end do not carry sessionId, the router
  * remembers messageId → sessionId from message.start.
+ * Permission replies also omit sessionId, so requestId → sessionId is tracked.
  */
 export class OpenCodeEventRouter {
   private readonly all = new Set<Listener>()
   private readonly bySession = new Map<string, Set<Listener>>()
   private readonly messageSessions = new Map<string, string>()
+  private readonly permissionSessions = new Map<string, string>()
 
   publish(event: AgentEvent): void {
     if (event.type === 'message.start') {
       this.messageSessions.set(event.messageId, event.sessionId)
+    }
+    if (event.type === 'permission.requested') {
+      this.permissionSessions.set(event.request.id, event.request.sessionId)
     }
 
     for (const listener of this.all) listener(event)
@@ -31,6 +36,9 @@ export class OpenCodeEventRouter {
 
     if (event.type === 'message.end') {
       this.messageSessions.delete(event.messageId)
+    }
+    if (event.type === 'permission.resolved') {
+      this.permissionSessions.delete(event.requestId)
     }
   }
 
@@ -58,6 +66,7 @@ export class OpenCodeEventRouter {
     this.all.clear()
     this.bySession.clear()
     this.messageSessions.clear()
+    this.permissionSessions.clear()
   }
 
   private sessionIdOf(event: AgentEvent): string | undefined {
@@ -74,7 +83,7 @@ export class OpenCodeEventRouter {
       case 'permission.requested':
         return event.request.sessionId
       case 'permission.resolved':
-        return undefined
+        return this.permissionSessions.get(event.requestId)
       case 'session.updated':
         return event.session.id
       case 'error':

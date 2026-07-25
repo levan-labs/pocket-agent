@@ -46,6 +46,15 @@ export interface OpenCodeClient {
     },
   ): Promise<void>
   /**
+   * POST /session/:id/permissions/:permissionID
+   * response: "once" | "always" | "reject"
+   */
+  replyPermission(
+    sessionId: string,
+    permissionId: string,
+    response: 'once' | 'always' | 'reject',
+  ): Promise<void>
+  /**
    * Subscribe to GET /global/event (SSE). Returns an unsubscribe function.
    * The stream runs until unsubscribe, disconnect, or a fatal read error.
    */
@@ -169,6 +178,30 @@ export class OpenCodeHttpClient implements OpenCodeClient {
     if (!response.ok) {
       throw new Error(
         `OpenCode POST /session/:id/prompt_async failed (HTTP ${response.status}).`,
+      )
+    }
+  }
+
+  async replyPermission(
+    sessionId: string,
+    permissionId: string,
+    response: 'once' | 'always' | 'reject',
+  ): Promise<void> {
+    const headers = this.authHeaders()
+    headers.set('Content-Type', 'application/json')
+
+    const res = await this.fetch(
+      `${this.baseUrl}/session/${encodeURIComponent(sessionId)}/permissions/${encodeURIComponent(permissionId)}`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ response }),
+      },
+    )
+
+    if (!res.ok) {
+      throw new Error(
+        `OpenCode POST /session/:id/permissions/:permissionID failed (HTTP ${res.status}).`,
       )
     }
   }

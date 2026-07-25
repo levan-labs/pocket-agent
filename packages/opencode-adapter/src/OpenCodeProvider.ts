@@ -45,8 +45,8 @@ function assertLoopbackBaseUrl(baseUrl: string): URL {
 /**
  * Adapter that exposes a local OpenCode server through AgentProvider.
  *
- * Milestone 2 Step 3: sendMessage via prompt_async + mapped SSE events.
- * Permission reply endpoints arrive in the next step.
+ * Milestone 2 Step 4: permission approve/deny against OpenCode's API.
+ * UI enablement (Connect sheet) is the next step.
  */
 export class OpenCodeProvider implements AgentProvider {
   readonly id = 'opencode'
@@ -56,6 +56,7 @@ export class OpenCodeProvider implements AgentProvider {
   private unsubscribeEvents: Unsubscribe | null = null
   private readonly mapper = new OpenCodeEventMapper()
   private readonly router = new OpenCodeEventRouter()
+  private readonly pendingPermissions = new Map<string, { sessionId: string }>()
   private readonly createClient: OpenCodeClientFactory
   private readonly defaultModel: { providerID: string; modelID: string }
 
@@ -109,7 +110,7 @@ export class OpenCodeProvider implements AgentProvider {
     return {
       streaming: true,
       sessions: true,
-      permissions: false,
+      permissions: true,
       files: false,
       terminal: false,
     }
@@ -177,14 +178,12 @@ export class OpenCodeProvider implements AgentProvider {
     }
   }
 
-  async approvePermission(_requestId: string): Promise<void> {
-    this.requireClient()
-    throw new Error('OpenCode permissions are implemented in a later Milestone 2 step.')
+  async approvePermission(requestId: string): Promise<void> {
+    await this.replyPermission(requestId, 'once')
   }
 
-  async denyPermission(_requestId: string): Promise<void> {
-    this.requireClient()
-    throw new Error('OpenCode permissions are implemented in a later Milestone 2 step.')
+  async denyPermission(requestId: string): Promise<void> {
+    await this.replyPermission(requestId, 'reject')
   }
 
   /**
@@ -195,10 +194,25 @@ export class OpenCodeProvider implements AgentProvider {
     return this.router.subscribe(listener)
   }
 
+  private async replyPermission(
+    requestId: string,
+    response: 'once' | 'always' | 'reject',
+  ): Promise<void> {
+    const client = this.requireClient()
+    const pending = this.pendingPermissions.get(requestId)
+    if (!pending) {
+      throw new Error(`Unknown permission request: ${requestId}`)
+    }
+    await client.replyPermission(pending.sessionId, requestId, response)
+    // Keep the pending entry until permission.resolved arrives on the stream,
+    // so session routing still works for that event.
+  }
+
   private startEventStream(client: OpenCodeClient): Promise<void> {
     this.unsubscribeEvents?.()
     this.mapper.reset()
     this.router.clear()
+    this.pendingPermissions.clear()
 
     return new Promise((resolve, reject) => {
       let settled = false
@@ -218,6 +232,14 @@ export class OpenCodeProvider implements AgentProvider {
             resolve()
           }
           for (const agentEvent of this.mapper.map(globalEvent.payload)) {
+            if (agentEvent.type === 'permission.requested') {
+              this.pendingPermissions.set(agentEvent.request.id, {
+                sessionId: agentEvent.request.sessionId,
+              })
+            }
+            if (agentEvent.type === 'permission.resolved') {
+              this.pendingPermissions.delete(agentEvent.requestId)
+            }
             this.router.publish(agentEvent)
           }
         },
@@ -242,6 +264,7 @@ export class OpenCodeProvider implements AgentProvider {
     this.client = null
     this.mapper.reset()
     this.router.clear()
+    this.pendingPermissions.clear()
   }
 
   private requireClient(): OpenCodeClient {
