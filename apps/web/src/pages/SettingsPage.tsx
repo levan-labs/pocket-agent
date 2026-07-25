@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button } from '@pocket-agent/ui'
 import { useAgentConnection } from '../features/agent/AgentContext'
 import { ConnectSheet } from '../features/agent/ConnectSheet'
+import { ModelPicker } from '../features/agent/ModelPicker'
 import { PROVIDER_CATALOG } from '../features/agent/providerCatalog'
 
 const APP_VERSION = '0.1.0'
@@ -53,6 +54,8 @@ export function SettingsPage() {
           )}
         </div>
       </section>
+
+      <ModelPicker />
 
       <section className="settings-section" aria-labelledby="settings-about">
         <h2 id="settings-about">About</h2>

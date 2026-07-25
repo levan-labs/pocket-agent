@@ -78,7 +78,7 @@ to your LAN by default.
 
 ## Status
 
-Milestones 1–3 are complete for the core mobile loop:
+Milestones 1–4 are complete for the core mobile loop:
 
 - keyboard-safe chat UI with streaming replies and permission cards
 - provider connection screen (Mock offline demo; OpenCode local server)
@@ -86,10 +86,12 @@ Milestones 1–3 are complete for the core mobile loop:
   permission approve/deny, and tool output in the chat UI
 - Files tab: browse project folders when connected to OpenCode
   (`listFiles` capability); Mock still shows Files as unavailable
+- Model picker in Settings when OpenCode is connected (uses models from
+  OpenCode — Zen, OpenRouter, etc.; API keys stay in OpenCode)
 - Terminal tab visibly disabled until a provider supports it
 
-Next: interactive Terminal, file contents preview, and a model picker.
-See [ideas.md](ideas.md) for longer-term directions.
+Next: interactive Terminal and file contents preview. See
+[ideas.md](ideas.md) for longer-term directions.
 
 ## Security defaults
 
