@@ -119,7 +119,10 @@ export class OpenCodeHttpClient implements OpenCodeClient {
   constructor(options: OpenCodeHttpClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, '')
     this.password = options.password
-    this.fetch = options.fetch ?? globalThis.fetch
+    // Browser fetch must keep its Window receiver — storing a bare
+    // globalThis.fetch and calling it as this.fetch() throws Illegal invocation.
+    const baseFetch = options.fetch ?? globalThis.fetch.bind(globalThis)
+    this.fetch = baseFetch
   }
 
   async health(): Promise<OpenCodeHealth> {

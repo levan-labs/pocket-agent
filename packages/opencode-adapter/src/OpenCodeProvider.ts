@@ -133,10 +133,25 @@ export class OpenCodeProvider implements AgentProvider {
     const queue: AgentEvent[] = []
     let notify: (() => void) | null = null
     let finished = false
+    let awaitingPermission = false
+    let sawAssistantText = false
 
     const unsub = this.router.subscribeSession(sessionId, (event) => {
       queue.push(event)
-      if (event.type === 'message.end' || event.type === 'error') {
+      if (event.type === 'permission.requested') {
+        awaitingPermission = true
+      }
+      if (event.type === 'permission.resolved') {
+        awaitingPermission = false
+      }
+      if (event.type === 'message.delta') {
+        sawAssistantText = true
+      }
+      // Don't end the turn while a permission card is waiting for the user.
+      if (event.type === 'error') {
+        finished = true
+      }
+      if (event.type === 'message.end' && !awaitingPermission) {
         finished = true
       }
       notify?.()
@@ -162,7 +177,6 @@ export class OpenCodeProvider implements AgentProvider {
         notify = null
       }
 
-      // Drain anything that arrived at the deadline edge.
       while (queue.length > 0) {
         yield queue.shift()!
       }
@@ -170,8 +184,13 @@ export class OpenCodeProvider implements AgentProvider {
       if (!finished) {
         yield {
           type: 'error',
-          message: 'Timed out waiting for the OpenCode assistant reply.',
+          message: awaitingPermission
+            ? 'Timed out while waiting for permission approval.'
+            : 'Timed out waiting for the OpenCode assistant reply.',
         }
+      } else if (!sawAssistantText && !awaitingPermission) {
+        // Model finished without visible text (e.g. tool-only turn).
+        // UI still got permission/session events; nothing else to add here.
       }
     } finally {
       unsub()

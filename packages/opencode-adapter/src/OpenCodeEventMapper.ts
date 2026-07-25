@@ -64,7 +64,60 @@ export class OpenCodeEventMapper {
     if (partId && partType) {
       this.partTypes.set(partId, partType)
     }
+
+    if (partType === 'tool') {
+      return this.mapToolPart(part)
+    }
     return []
+  }
+
+  private mapToolPart(part: Record<string, unknown>): AgentEvent[] {
+    const id = asString(part.id)
+    const sessionId = asString(part.sessionID)
+    const tool = asString(part.tool) ?? 'tool'
+    const state = asRecord(part.state) ?? {}
+    const status = asString(state.status)
+    if (!id || !sessionId || !status) return []
+
+    const input = asRecord(state.input) ?? {}
+    const command = asString(input.command)
+    const description =
+      asString(state.title) ||
+      asString(input.description) ||
+      asString((asRecord(state.metadata) ?? {}).description) ||
+      tool
+
+    const output =
+      asString(state.output) ||
+      asString((asRecord(state.metadata) ?? {}).output) ||
+      undefined
+
+    const detail = command ? `$ ${command}` : undefined
+    const toolCall = {
+      id,
+      sessionId,
+      tool,
+      title: description,
+      status:
+        status === 'completed'
+          ? ('succeeded' as const)
+          : status === 'error'
+            ? ('failed' as const)
+            : ('running' as const),
+      detail,
+      output,
+    }
+
+    if (status === 'pending' || status === 'running') {
+      return [
+        {
+          type: toolCall.status === 'running' && output ? 'tool.update' : 'tool.start',
+          toolCall,
+        },
+      ]
+    }
+
+    return [{ type: 'tool.end', toolCall }]
   }
 
   private mapMessageUpdated(properties: Record<string, unknown>): AgentEvent[] {
