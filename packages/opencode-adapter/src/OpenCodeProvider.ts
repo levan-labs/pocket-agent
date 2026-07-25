@@ -4,15 +4,18 @@ import type {
   AgentSession,
   CreateSessionInput,
   FileEntry,
+  ModelOption,
   ProviderCapabilities,
   ProviderConnectionConfig,
   ProviderConnectionResult,
 } from '@pocket-agent/shared-types'
 import {
   OpenCodeHttpClient,
+  flattenConnectedModels,
   toFileEntry,
   type OpenCodeClient,
   type OpenCodeHttpClientOptions,
+  type OpenCodeListedModel,
   type OpenCodeSession,
   type Unsubscribe,
 } from './OpenCodeClient'
@@ -47,7 +50,7 @@ function assertLoopbackBaseUrl(baseUrl: string): URL {
 /**
  * Adapter that exposes a local OpenCode server through AgentProvider.
  *
- * Milestone 3 Step 2: listFiles capability against OpenCode GET /file.
+ * Milestone 4 Step 2: list/select models from OpenCode GET /provider.
  */
 export class OpenCodeProvider implements AgentProvider {
   readonly id = 'opencode'
@@ -59,18 +62,20 @@ export class OpenCodeProvider implements AgentProvider {
   private readonly router = new OpenCodeEventRouter()
   private readonly pendingPermissions = new Map<string, { sessionId: string }>()
   private readonly createClient: OpenCodeClientFactory
-  private readonly defaultModel: { providerID: string; modelID: string }
+  private readonly fallbackModel: { providerID: string; modelID: string }
+  private availableModels: ModelOption[] = []
+  private selectedModel: ModelOption | null = null
 
   constructor(
     createClient: OpenCodeClientFactory = (options) => new OpenCodeHttpClient(options),
-    defaultModel: { providerID: string; modelID: string } = {
+    fallbackModel: { providerID: string; modelID: string } = {
       // Free OpenCode Zen model available without extra local keys.
       providerID: 'opencode',
       modelID: 'ling-3.0-flash-free',
     },
   ) {
     this.createClient = createClient
-    this.defaultModel = defaultModel
+    this.fallbackModel = fallbackModel
   }
 
   async connect(config: ProviderConnectionConfig): Promise<ProviderConnectionResult> {
@@ -88,6 +93,7 @@ export class OpenCodeProvider implements AgentProvider {
       }
 
       this.client = client
+      await this.refreshModels(client)
       await this.startEventStream(client)
       return {
         ok: true,
@@ -114,6 +120,7 @@ export class OpenCodeProvider implements AgentProvider {
       permissions: true,
       files: true,
       terminal: false,
+      models: true,
     }
   }
 
@@ -127,6 +134,26 @@ export class OpenCodeProvider implements AgentProvider {
     const client = this.requireClient()
     const nodes = await client.listFiles(path ?? '.')
     return nodes.map(toFileEntry)
+  }
+
+  async listModels(): Promise<ModelOption[]> {
+    this.requireClient()
+    return [...this.availableModels]
+  }
+
+  getSelectedModel(): ModelOption | null {
+    return this.selectedModel
+  }
+
+  async setSelectedModel(model: { providerId: string; id: string }): Promise<void> {
+    this.requireClient()
+    const match = this.availableModels.find(
+      (m) => m.providerId === model.providerId && m.id === model.id,
+    )
+    if (!match) {
+      throw new Error(`Unknown model: ${model.providerId}/${model.id}`)
+    }
+    this.selectedModel = match
   }
 
   async createSession(input?: CreateSessionInput): Promise<AgentSession> {
@@ -165,9 +192,14 @@ export class OpenCodeProvider implements AgentProvider {
     })
 
     try {
+      const model = this.selectedModel ?? {
+        providerId: this.fallbackModel.providerID,
+        id: this.fallbackModel.modelID,
+        name: this.fallbackModel.modelID,
+      }
       await client.promptAsync(sessionId, {
         text: message,
-        model: this.defaultModel,
+        model: { providerID: model.providerId, modelID: model.id },
       })
 
       const deadline = Date.now() + 120_000
@@ -284,10 +316,50 @@ export class OpenCodeProvider implements AgentProvider {
     })
   }
 
+  private async refreshModels(client: OpenCodeClient): Promise<void> {
+    const list = await client.listProviders()
+    const providerNames = new Map(list.providers.map((p) => [p.id, p.name]))
+    const connected = flattenConnectedModels(list).map((m) =>
+      toModelOption(m, providerNames.get(m.providerID)),
+    )
+    this.availableModels = connected
+
+    // Prefer previously selected model if still available; else OpenCode default;
+    // else fallback Zen free model; else first connected model.
+    const previous = this.selectedModel
+    if (
+      previous &&
+      connected.some((m) => m.providerId === previous.providerId && m.id === previous.id)
+    ) {
+      this.selectedModel = connected.find(
+        (m) => m.providerId === previous.providerId && m.id === previous.id,
+      )!
+      return
+    }
+
+    for (const providerId of list.connected) {
+      const defaultModelId = list.defaults[providerId]
+      if (!defaultModelId) continue
+      const match = connected.find((m) => m.providerId === providerId && m.id === defaultModelId)
+      if (match) {
+        this.selectedModel = match
+        return
+      }
+    }
+
+    const fallback = connected.find(
+      (m) =>
+        m.providerId === this.fallbackModel.providerID && m.id === this.fallbackModel.modelID,
+    )
+    this.selectedModel = fallback ?? connected[0] ?? null
+  }
+
   private teardown(): void {
     this.unsubscribeEvents?.()
     this.unsubscribeEvents = null
     this.client = null
+    this.availableModels = []
+    this.selectedModel = null
     this.mapper.reset()
     this.router.clear()
     this.pendingPermissions.clear()
@@ -298,6 +370,15 @@ export class OpenCodeProvider implements AgentProvider {
       throw new Error('OpenCode provider is not connected.')
     }
     return this.client
+  }
+}
+
+function toModelOption(model: OpenCodeListedModel, providerName?: string): ModelOption {
+  return {
+    id: model.id,
+    providerId: model.providerID,
+    name: model.name,
+    providerName,
   }
 }
 
